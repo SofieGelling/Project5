@@ -2,69 +2,78 @@
 
 import pandas as pd
 
-omloopplanning_df = pd.read_excel("/Users/esthergellings/Desktop/School/project/Project5/omloopplanning.xlsx")
-omloopplanning_df.head()
+def lezen_bestand(filepath):
+    """
+    Laad het excel bestand met de omloopplanning in een dataframe.
+    filepath : pad naar het excelbestand
+    omloopplanning_df : de omloopplanning gelezen en in een dataframe
+    """
+    omloopplanning_df = pd.read_excel(filepath)
+    return omloopplanning_df
 
-# Definieer de parameters
-original_capacity = 300  # Originele accucapaciteit in kWh
-SOH_min = 0.85  # Minimale SOH (State of Health)
-SOH_max = 0.95  # Maximale SOH (State of Health)
-min_SOC_percentage = 0.10  # Minimale SOC (State of Charge), 10%
+def status(omloopplanning_df, original_capacity, SOH_min, SOH_max, min_SOC_percentage):
+    """
+    Maak een nieuwe dataframe waarin de de huidige enrgie per rit per omloop word gegeven, 
+    met een status kolom die aangeeft of de waarde onder de State of Charge komt of niet. Zo kan je controlleren
+    of de oplaadtijden kloppen. Je krijgt ook een aangepast overzicht terug. 
 
-# Simuleer een SOH waarde tussen 85% en 95%
-SOH = (SOH_min + SOH_max) / 2  # Gemiddelde SOH 
+    DE VARIABLEN:
+    omloopplanning_df : de omloopplanning gelezen en in een dataframe
+    original_capacity = Originele capaciteit in kWh
+    SOH_min = State of Health minimale waarde (factor)
+    SOH_max = State of Health maximale waarde (factor)
+    min_SOC_percentage = State of Charge minimale waarde (factor)
+    """
+    SOH = (SOH_min + SOH_max) / 2  # Gemiddelde SOH 
+    current_capacity = original_capacity * SOH # Bereken de huidige accucapaciteit gebaseerd op SOH
+    min_SOC_kWh = current_capacity * min_SOC_percentage # Minimale SOC in kWh
 
-# Bereken de huidige accucapaciteit gebaseerd op SOH
-current_capacity = original_capacity * SOH
+   
+    omloopplanning_df['Huidige energie'] = 0.0 # Kolom voor de huidige hoeveelheid energie 
+    omloopplanning_df['Status'] = '' # kolom voor de status voor het opladen
+    
+    bussoort = omloopplanning_df.groupby('omloop nummer') # Groepeer op buslijn
+    df_lijst = [] # Lege lijst om de dataframes voor elke omloop op te slaan
+    
+    for soort, groep in bussoort: # Loop door elke omloop
+        current_SOC = current_capacity # Begin met een volle accu voor elke omloop van 270 kWh
 
-# Minimale SOC in kWh
-min_SOC_kWh = current_capacity * min_SOC_percentage
-
-min_SOC_kWh, current_capacity
-
-# Voeg een kolom toe om het cumulatieve energieverbruik bij te houden en de status
-omloopplanning_df['Cumulatief verbruik'] = 0
-omloopplanning_df['Status'] = ''
-
-# Groepeer op buslijn
-bussoort = omloopplanning_df.groupby('omloop nummer')
-
-# Maak een lege lijst om de dataframes voor elke buslijn op te slaan
-df_lijst = []
-
-# Loop door elke buslijngroep
-for soort, groep in bussoort:
-    # Begin met een volle accu voor elke buslijn van 270 kWh
-    current_SOC = current_capacity
-
-# Itereer door elke rij binnen de huidige buslijn
-    for index, row in groep.iterrows():
-        verbruik = row['energieverbruik']
-        current_SOC -= verbruik  # Trek het verbruik van de SOC af
+    
+        for index, row in groep.iterrows(): # Itereer door elke rij binnen de huidige omloop
+            verbruik = row['energieverbruik']
+            current_SOC -= verbruik  # Trek het verbruik van de SOC af
         
-        # Sla het cumulatieve verbruik op in de dataframe
-        groep.at[index, 'Cumulatief verbruik'] = current_SOC
+            groep.at[index, 'Huidige energie'] = current_SOC # Sla de huidige energie op in de dataframe
         
-        # Controleer of de SOC onder het minimum komt
-        if current_SOC < min_SOC_kWh:
-            groep.at[index, 'Status'] = 'Opladen nodig'
-            current_SOC = current_capacity  # Simuleer opladen tot 90% van de capaciteit
-        else:
-            groep.at[index, 'Status'] = 'OK'
+            if current_SOC < min_SOC_kWh: # Controleer of de SOC onder het minimum komt
+                groep.at[index, 'Status'] = 'Opladen nodig' # Wel, daar gaat het fout, er moest opgeladen worden
+                current_SOC = current_capacity  # Simuleer opladen tot 90% van de capaciteit
+            else:
+                groep.at[index, 'Status'] = 'OK' # Niet, dat is goed, de planning hier klopt
 
-    # Voeg de bewerkte groep toe aan de lijst
-    df_lijst.append(groep)
+        df_lijst.append(groep) # Voeg de bewerkte groep toe aan de lijst
 
-# Concateneer alle groepen om weer een volledige dataframe te krijgen
-omloopplanning_df = pd.concat(df_lijst)
+   
+    omloopplanning_df = pd.concat(df_lijst) # Gooi alle losse dataframes bij elkaar tot een grote dataframe
 
-# Toon de eerste 100 rijen van de aangepaste dataframe
-pd.set_option('display.max_rows', None)
-#print(omloopplanning_df[['buslijn', 'startlocatie', 'eindlocatie', 'energieverbruik', 'Cumulatief verbruik', 'Status']].head(100))
-print(omloopplanning_df[['omloop nummer', 'energieverbruik', 'Cumulatief verbruik', 'Status']].head(100))
+    
+    pd.set_option('display.max_rows', None) # Toon de eerste 100 rijen van de aangepaste dataframe
+    # Overzicht_df = (omloopplanning_df[['omloop nummer', 'energieverbruik', 'Huidige energie', 'Status']].head(30))
+    return(omloopplanning_df)
 
-# Filter de DataFrame om alleen de rijen zonder "OK" te tonen
-#df_filtered = omloopplanning_df[omloopplanning_df['Status'] == 'Opladen nodig']
+def filter(omloopplanning_df): # Filter de DataFrame om alleen de rijen zonder "OK" te tonen
+    df_filtered = omloopplanning_df[omloopplanning_df['Status'] == 'Opladen nodig']
+    return print(df_filtered)
+    
+"""
+original_capacity = 300  -- Originele accucapaciteit in kWh
+SOH_min = 0.85  -- Minimale SOH (State of Health)
+SOH_max = 0.95  -- Maximale SOH (State of Health)
+min_SOC_percentage = 0.10  -- Minimale SOC (State of Charge), 10%
+ """
 
-# Resultaat van gefilterde data
-#print(df_filtered)
+omloopplanning_df = lezen_bestand("/Users/esthergellings/Desktop/School/project/Project5/omloopplanning.xlsx")
+omloopplanning = status(omloopplanning_df, 300, 0.85, 0.95, 0.10)
+Overzicht_df = (omloopplanning[['omloop nummer', 'energieverbruik', 'Huidige energie', 'Status']].head(200))
+print(Overzicht_df)
+Gefilterd = filter(Overzicht_df)
