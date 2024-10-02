@@ -31,6 +31,8 @@ def initialize_states():
         st.session_state.show_results = False
     if 'show_uploader' not in st.session_state:
         st.session_state.show_uploader = False
+    if 'uploaded_file' not in st.session_state:
+        st.session_state.uploaded_file = None
 
 # Function for software tool information section
 def software_tool_information():
@@ -65,6 +67,7 @@ def file_upload_section():
 
         # Check if a file has been uploaded
         if uploaded_file is not None:
+            st.session_state.uploaded_file = uploaded_file  # Save the file to session state
             # Read the uploaded Excel file using pandas
             df = pd.read_excel(uploaded_file)
 
@@ -73,6 +76,20 @@ def file_upload_section():
             st.dataframe(df)
         else:
             st.write("Please upload an Excel file.")
+
+# Function to run a piece of code when button is clicked, but checks for file first
+def run_code_button():
+    st.header("Run Code")
+    if st.button("Run Code"):
+        if st.session_state.uploaded_file is None:
+            st.error("Error: No Excel file uploaded. Please upload a file in the 'Import Data' section.")
+        else:
+            # Place the code you want to run here
+            st.success("Code is running successfully with the uploaded file!")
+            # Example: You can process the uploaded file further here
+            df = pd.read_excel(st.session_state.uploaded_file)
+            st.write("Processing data from the uploaded file:")
+            st.dataframe(df)
 
 # Main part of the script
 def main():
@@ -88,14 +105,19 @@ def main():
     # Add a separator between the sections
     st.markdown("---")
 
-    # Additional info section
-    results()
+    # File upload section
+    file_upload_section()
 
     # Add a separator between the sections
     st.markdown("---")
 
-    # File upload section
-    file_upload_section()
+    run_code_button()
+
+    # Add a separator between the sections
+    st.markdown("---")
+
+    # Additional info section
+    results()
 
 # Run the app
 if __name__ == "__main__":
