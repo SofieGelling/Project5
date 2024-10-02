@@ -11,7 +11,7 @@ def lezen_bestand(filepath):
     omloopplanning_df = pd.read_excel(filepath)
     return omloopplanning_df
 
-def status(omloopplanning_df, original_capacity, SOH_min, SOH_max, min_SOC_percentage):
+def status(omloopplanning_df, original_capacity, SOH, min_SOC_percentage):
     """
     Maak een nieuwe dataframe waarin de de huidige enrgie per rit per omloop word gegeven, 
     met een status kolom die aangeeft of de waarde onder de State of Charge komt of niet. Zo kan je controlleren
@@ -24,9 +24,8 @@ def status(omloopplanning_df, original_capacity, SOH_min, SOH_max, min_SOC_perce
     SOH_max = State of Health maximale waarde (factor)
     min_SOC_percentage = State of Charge minimale waarde (factor)
     """
-    SOH = (SOH_min + SOH_max) / 2  # Gemiddelde SOH 
     current_capacity = original_capacity * SOH # Bereken de huidige accucapaciteit gebaseerd op SOH
-    min_SOC_kWh = current_capacity * min_SOC_percentage # Minimale SOC in kWh
+    min_SOC_kWh = original_capacity * min_SOC_percentage # Minimale SOC in kWh
 
    
     omloopplanning_df['Huidige energie'] = 0.0 # Kolom voor de huidige hoeveelheid energie 
@@ -47,7 +46,6 @@ def status(omloopplanning_df, original_capacity, SOH_min, SOH_max, min_SOC_perce
         
             if current_SOC < min_SOC_kWh: # Controleer of de SOC onder het minimum komt
                 groep.at[index, 'Status'] = 'Opladen nodig' # Wel, daar gaat het fout, er moest opgeladen worden
-                current_SOC = current_capacity  # Simuleer opladen tot 90% van de capaciteit
             else:
                 groep.at[index, 'Status'] = 'OK' # Niet, dat is goed, de planning hier klopt
 
@@ -73,7 +71,7 @@ min_SOC_percentage = 0.10  -- Minimale SOC (State of Charge), 10%
  """
 
 omloopplanning_df = lezen_bestand("/Users/esthergellings/Desktop/School/project/Project5/omloopplanning.xlsx")
-omloopplanning = status(omloopplanning_df, 300, 0.85, 0.95, 0.10)
+omloopplanning = status(omloopplanning_df, 300, 0.90, 0.10)
 Overzicht_df = (omloopplanning[['omloop nummer', 'energieverbruik', 'Huidige energie', 'Status']].head(200))
-print(Overzicht_df)
 Gefilterd = filter(Overzicht_df)
+print(Gefilterd)
