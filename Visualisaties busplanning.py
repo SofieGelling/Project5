@@ -52,7 +52,7 @@ start_limit = data_df['starttijd datum'].min() - pd.Timedelta(hours=1)  # Subtra
 ax.set_xlim([mdates.date2num(start_limit), mdates.date2num(start_limit + pd.Timedelta(days=1))])
 
 # Add labels, legend, and title
-ax.set_yticks(list(omloop_mapping.values()))  # Set y-ticks as omloop nummers
+ax.set_yticks(list(omloop_mapping.values()))  # Set y-ticks as omloop nummers  
 ax.set_yticklabels(omloop_nummers)  # Map the y-tick labels to 'omloop nummer'
 ax.set_xlabel('Time')
 ax.set_ylabel('Omloop Nummer')
