@@ -95,6 +95,8 @@ def file_upload_section():
             st.dataframe(df1)
             st.write("Afstandsmatrix:")
             st.dataframe(df2)
+            
+        #display error for missing files
         if omloopplanning is None:
             st.write("Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
         if dienstregeling is None:
@@ -109,19 +111,30 @@ def run_code_button():
         if st.session_state.uploaded_dienstregeling is None:
             st.error("Error: No Excel file with dienstregeling uploaded. Please upload a file like \"Connexxion data - 2024-2025.xlsx\", containing a sheet named \"Dienstregeling\" and \"Afstandsmatrix\" in the 'Import Data' section.")
         if not (st.session_state.uploaded_omloopplanning is None) and not (st.session_state.uploaded_dienstregeling is None):
-            # Place the code you want to run here
-            st.success("Code is running successfully with the uploaded file!")
-            # Example: You can process the uploaded file further here
-            df1 = pd.read_excel(st.session_state.uploaded_omloopplanning)
-            df2 = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling")
-            df3 = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
-            st.write("Processing data from the uploaded files:")
-            st.write("Omloopplanning:") 
-            st.dataframe(df1)
-            st.write("Dienstregeling:")  
-            st.dataframe(df2)
-            st.write("Afstandsmatrix:")
-            st.dataframe(df3)
+            # load excel files into pandas
+            omloopplanning = pd.read_excel(st.session_state.uploaded_omloopplanning)
+            dienstregeling = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling")
+            afstandsmatrix = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
+            
+            # put the dataframes from excel files in module rit_haalbaar_binnen_tijd
+            rit_haalbaar_binnen_tijd.omloopplanning = omloopplanning
+            rit_haalbaar_binnen_tijd.afstandsmatrix = afstandsmatrix
+            rit_haalbaar_binnen_tijd.data_opschonen()
+            rit_haalbaar_binnen_tijd.kolommen_toevoegen_haalbaarheid()
+            
+            # output haalbaarheid
+            st.write("Niet haalbare ritten: ")
+            st.dataframe(rit_haalbaar_binnen_tijd.niet_haalbare_ritten())
+            
+            # put the dataframes from excel files in module rit_haalbaar_binnen_tijd
+            check_1_bus_per_rit.omloopplanning = omloopplanning
+            check_1_bus_per_rit.dienstregeling = dienstregeling
+            check_1_bus_per_rit.afstandsmatrix = afstandsmatrix
+            
+            # output dienstregeling juist ingevuld
+            st.write("Onjuistheden in de invulling van de dienstregeling.")
+            st.write("Alle ritten uit de dienstregelingen die door 0 of meerdere bussen gereden worden:")
+            st.dataframe(check_1_bus_per_rit.niet_correcte_ritten())
 
 # Main part of the script
 def main():

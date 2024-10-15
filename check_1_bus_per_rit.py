@@ -3,6 +3,7 @@ import pandas as pd
 omloopplanning:pd.DataFrame  = None
 afstandsmatrix:pd.DataFrame = None
 dienstregeling:pd.DataFrame  = None
+correctheid_berekend = False
 
 def initialisatie()->None:
     """Excelbestanden inladen en data klaar maken voor gebruik
@@ -30,17 +31,29 @@ def aantal_bussen_ingepland_voor_rit(rit:pd.DataFrame)->int:
                                                ]
     return len(aantal_bussen_voor_dienst)
 
+def kolommen_toevoegen_aantal_bussen():
+    global correctheid_berekend
+    correctheid_berekend = True
+    dienstregeling["aantal bussen die deze rit rijdt"] = dienstregeling.apply(aantal_bussen_ingepland_voor_rit, axis=1)
+
+def correcte_ritten():
+    if correctheid_berekend == False:
+        kolommen_toevoegen_aantal_bussen()
+    return dienstregeling[dienstregeling["aantal bussen die deze rit rijdt"] == 1]
+    
+def niet_correcte_ritten():
+    if correctheid_berekend == False:
+        kolommen_toevoegen_aantal_bussen()
+    return dienstregeling[dienstregeling["aantal bussen die deze rit rijdt"] != 1]
 
 if __name__ == "__main__":
     initialisatie()
     # handmatig geïntroduceerde fout om te testen: 
     # dienstregeling.iat[1,1] = "06:05"
-    dienstregeling["aantal bussen die deze rit rijdt"] = dienstregeling.apply(aantal_bussen_ingepland_voor_rit, axis=1)
     print("de dienstregeling data: ")
     print(dienstregeling)
-
     print("correcte ritten (ritten uit de dienstregelingen die door 1 bus gereden worden )")
-    print(dienstregeling[dienstregeling["aantal bussen die deze rit rijdt"] == 1])
+    print(correcte_ritten())
 
     print("foute ritten (ritten uit de dienstregelingen die door 0 of meerdere bussen gereden worden): ")
-    print(dienstregeling[dienstregeling["aantal bussen die deze rit rijdt"] != 1])
+    print(niet_correcte_ritten())

@@ -3,6 +3,7 @@ import datetime as dt
 
 omloopplanning = None
 afstandsmatrix = None
+haalbaarheid_berekend = False
 
 def initialisatie()->None:
     """Excelbestanden inladen en data klaar maken voor gebruik
@@ -12,7 +13,9 @@ def initialisatie()->None:
     global afstandsmatrix
     omloopplanning = pd.read_excel("omloopplanning.xlsx")
     afstandsmatrix = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name="Afstandsmatrix")
+    data_opschonen()
 
+def data_opschonen():
     # opvullen met nullen bij alle cellen waar geen buslijn nummer is ingevuld
     afstandsmatrix["buslijn"].fillna(0, inplace=True)
     omloopplanning["buslijn"].fillna(0, inplace=True)
@@ -74,12 +77,24 @@ def kolommen_toevoegen_haalbaarheid():
     omloopplanning["geplande reistijd"] = omloopplanning.apply(geplande_reistijd, axis = 1)
     omloopplanning["kortst mogelijke reistijd"] = omloopplanning.apply(kortst_mogelijke_reistijd_voor_rit, axis = 1)
     omloopplanning["rit haalbaar binnen de tijd"] = omloopplanning.apply(rit_haalbaar_binnen_de_tijd, axis = 1)
+    global haalbaarheid_berekend
+    haalbaarheid_berekend = True
+    
+def haalbare_ritten():
+    if haalbaarheid_berekend == False:
+        kolommen_toevoegen_haalbaarheid()
+    return omloopplanning[omloopplanning["rit haalbaar binnen de tijd"]]
+    
+def niet_haalbare_ritten():
+    if haalbaarheid_berekend == False:
+        kolommen_toevoegen_haalbaarheid()
+    return omloopplanning[~omloopplanning["rit haalbaar binnen de tijd"]]
 
 if __name__ == "__main__":
     initialisatie()
-    kolommen_toevoegen_haalbaarheid()
+    #kolommen_toevoegen_haalbaarheid()
     omloopplanning.columns
     print("~~~~~~~~~ Ritten haalbaar binnen de tijd: ")
-    print(omloopplanning[omloopplanning["rit haalbaar binnen de tijd"]])
+    print(haalbare_ritten())
     print("~~~~~~~~~ Niet haalbare ritten: ")
-    print(omloopplanning[~omloopplanning["rit haalbaar binnen de tijd"]])
+    print(niet_haalbare_ritten())
