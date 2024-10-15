@@ -1,6 +1,8 @@
 # streamlit run Project5Streamlit.py
 import streamlit as st
 import pandas as pd
+import rit_haalbaar_binnen_tijd
+import check_1_bus_per_rit
 
 # Inject custom CSS for button styling
 def custom_button_css():
@@ -33,6 +35,10 @@ def initialize_states():
         st.session_state.show_uploader = False
     if 'uploaded_file' not in st.session_state:
         st.session_state.uploaded_file = None
+    if 'uploaded_omloopplanning' not in st.session_state:
+        st.session_state.uploaded_omloopplanning = None
+    if 'uploaded_dienstregeling' not in st.session_state:
+        st.session_state.uploaded_dienstregeling = None
 
 # Function for software tool information section
 def software_tool_information():
@@ -63,33 +69,59 @@ def file_upload_section():
 
     # Show file uploader if the state is True
     if st.session_state.show_uploader:
-        uploaded_file = st.file_uploader("Choose an Excel file", type="xlsx")
+        omloopplanning = st.file_uploader("Choose the Excel file with the omloopplanning", type="xlsx")
+        dienstregeling = st.file_uploader("Choose the Excel file with the dienstregeling (usually named something like \"Connection data 20##-20## .xlsx\")", type="xlsx")
 
         # Check if a file has been uploaded
-        if uploaded_file is not None:
-            st.session_state.uploaded_file = uploaded_file  # Save the file to session state
+        if omloopplanning is not None:
+            st.session_state.uploaded_omloopplanning = omloopplanning  # Save the file to session state
             # Read the uploaded Excel file using pandas
-            df = pd.read_excel(uploaded_file)
+            df = pd.read_excel(omloopplanning)
 
             # Display the DataFrame
-            st.write("Here is the content of the uploaded Excel file:")
+            st.write("Here is the content of the uploaded omloopplanning file:")
             st.dataframe(df)
-        else:
-            st.write("Please upload an Excel file.")
+            
+        # Check if a file has been uploaded
+        if dienstregeling is not None:
+            st.session_state.uploaded_dienstregeling = dienstregeling  # Save the file to session state
+            # Read the uploaded Excel file using pandas
+            df1 = pd.read_excel(dienstregeling, sheet_name="Dienstregeling")
+            df2 = pd.read_excel(dienstregeling, sheet_name="Afstandsmatrix")
+
+            # Display the DataFrame
+            st.write("Here is the content of the uploaded dienstregeling file.")
+            st.write("Dienstregeling:")    
+            st.dataframe(df1)
+            st.write("Afstandsmatrix:")
+            st.dataframe(df2)
+        if omloopplanning is None:
+            st.write("Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
+        if dienstregeling is None:
+            st.write("Please upload a file like \"Connexxion data - 2024-2025.xlsx\", containing a sheet named \"Dienstregeling\" and \"Afstandsmatrix\" in the 'Import Data' section.")
 
 # Function to run a piece of code when button is clicked, but checks for file first
 def run_code_button():
     st.header("Run Code")
     if st.button("Run Code"):
-        if st.session_state.uploaded_file is None:
-            st.error("Error: No Excel file uploaded. Please upload a file in the 'Import Data' section.")
-        else:
+        if st.session_state.uploaded_omloopplanning is None:
+            st.error("Error: No Excel file with omloopplanning uploaded. Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
+        if st.session_state.uploaded_dienstregeling is None:
+            st.error("Error: No Excel file with dienstregeling uploaded. Please upload a file like \"Connexxion data - 2024-2025.xlsx\", containing a sheet named \"Dienstregeling\" and \"Afstandsmatrix\" in the 'Import Data' section.")
+        if not (st.session_state.uploaded_omloopplanning is None) and not (st.session_state.uploaded_dienstregeling is None):
             # Place the code you want to run here
             st.success("Code is running successfully with the uploaded file!")
             # Example: You can process the uploaded file further here
-            df = pd.read_excel(st.session_state.uploaded_file)
-            st.write("Processing data from the uploaded file:")
-            st.dataframe(df)
+            df1 = pd.read_excel(st.session_state.uploaded_omloopplanning)
+            df2 = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling")
+            df3 = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
+            st.write("Processing data from the uploaded files:")
+            st.write("Omloopplanning:") 
+            st.dataframe(df1)
+            st.write("Dienstregeling:")  
+            st.dataframe(df2)
+            st.write("Afstandsmatrix:")
+            st.dataframe(df3)
 
 # Main part of the script
 def main():
