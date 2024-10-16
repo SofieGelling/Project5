@@ -1,6 +1,4 @@
 import pandas as pd
-import rit_haalbaar_binnen_tijd
-import check_1_bus_per_rit
 
 omloopplanning = pd.read_excel("omloopplanning.xlsx")
 afstandsmatrix = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name="Afstandsmatrix")
@@ -11,11 +9,18 @@ afstandsmatrix_nieuw = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_n
 dienstregeling_nieuw = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name="Dienstregeling")
 
 
-def aantal_bussen_vergelijken():
+def verschil_aantal_bussen():
     aantal_bussen = omloopplanning['omloop nummer'].nunique()
     aantal_bussen_nieuw = omloopplanning_nieuw['omloop nummer'].nunique()
-    KPI_aantal_bussen = aantal_bussen/aantal_bussen_nieuw
-    return KPI_aantal_bussen
+    verschil = aantal_bussen_nieuw - aantal_bussen
+    return verschil
+
+def verschil_materiaal_ritten():
+    aantal_materiaal_ritten = omloopplanning['activiteit'][omloopplanning['activiteit'] == 'materiaal rit'].count()
+    aantal_materiaal_ritten_nieuw = omloopplanning_nieuw['activiteit'][omloopplanning_nieuw['activiteit'] == 'materiaal rit'].count()
+    verschil = aantal_materiaal_ritten_nieuw - aantal_materiaal_ritten
+    return verschil
+
 
 
 
