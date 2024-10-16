@@ -3,6 +3,7 @@ import pandas as pd
 omloopplanning:pd.DataFrame  = None
 afstandsmatrix:pd.DataFrame = None
 dienstregeling:pd.DataFrame  = None
+data_opgeschoond = False
 correctheid_berekend = False
 
 def initialisatie()->None:
@@ -15,12 +16,29 @@ def initialisatie()->None:
     omloopplanning = pd.read_excel("omloopplanning.xlsx")
     afstandsmatrix = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name="Afstandsmatrix")
     dienstregeling = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name="Dienstregeling")
-
+    data_opschonen()
+    
+def inladen(nieuwe_omloopplanning, nieuwe_afstandsmatrix, nieuwe_dienstregeling):
+    global omloopplanning
+    global afstandsmatrix
+    global dienstregeling
+    global data_opgeschoond
+    global correctheid_berekend
+    omloopplanning = nieuwe_omloopplanning
+    afstandsmatrix = nieuwe_afstandsmatrix
+    dienstregeling = nieuwe_dienstregeling
+    data_opgeschoond = False
+    correctheid_berekend = False
+    data_opschonen()
+    kolommen_toevoegen_aantal_bussen()
+    
+def data_opschonen():
+    global data_opgeschoond
     # opvullen met nullen bij alle cellen waar geen buslijn nummer is ingevuld
     afstandsmatrix["buslijn"].fillna(0, inplace=True)
     omloopplanning["buslijn"].fillna(0, inplace=True)
+    data_opgeschoond = True
     
-    # ongeldige kolommen verwijderen
     omloopplanning.drop([229.5, 'Unnamed: 12', "originele accucapaciteit van 300kWu"], axis=1, inplace=True)
 
 def aantal_bussen_ingepland_voor_rit(rit:pd.DataFrame)->int:
@@ -33,15 +51,19 @@ def aantal_bussen_ingepland_voor_rit(rit:pd.DataFrame)->int:
 
 def kolommen_toevoegen_aantal_bussen():
     global correctheid_berekend
-    correctheid_berekend = True
     dienstregeling["aantal bussen die deze rit rijdt"] = dienstregeling.apply(aantal_bussen_ingepland_voor_rit, axis=1)
+    correctheid_berekend = True
 
 def correcte_ritten():
+    if data_opgeschoond == False:
+        data_opschonen()
     if correctheid_berekend == False:
         kolommen_toevoegen_aantal_bussen()
     return dienstregeling[dienstregeling["aantal bussen die deze rit rijdt"] == 1]
     
 def niet_correcte_ritten():
+    if data_opgeschoond == False:
+        data_opschonen()
     if correctheid_berekend == False:
         kolommen_toevoegen_aantal_bussen()
     return dienstregeling[dienstregeling["aantal bussen die deze rit rijdt"] != 1]
