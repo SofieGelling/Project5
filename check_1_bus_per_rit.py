@@ -51,6 +51,7 @@ def aantal_bussen_ingepland_voor_rit(rit:pd.DataFrame)->int:
 
 def kolommen_toevoegen_aantal_bussen():
     global correctheid_berekend
+    dienstregeling.iat[1,1] = "06:05"
     dienstregeling["aantal bussen die deze rit rijdt"] = dienstregeling.apply(aantal_bussen_ingepland_voor_rit, axis=1)
     correctheid_berekend = True
 
@@ -70,6 +71,7 @@ def niet_correcte_ritten():
 
 if __name__ == "__main__":
     initialisatie()
+    #inladen(pd.read_excel("omloopplanning.xlsx"), pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name="Afstandsmatrix"), pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name="Dienstregeling"))
     # handmatig geïntroduceerde fout om te testen: 
     # dienstregeling.iat[1,1] = "06:05"
     print("de dienstregeling data: ")

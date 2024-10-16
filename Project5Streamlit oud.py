@@ -1,4 +1,4 @@
-# streamlit run Project5Streamlit_alles_lekker_leeg.py
+# streamlit run Project5Streamlit.py
 import streamlit as st
 import pandas as pd
 import rit_haalbaar_binnen_tijd
@@ -63,59 +63,78 @@ def results():
 # Function for uploading Excel files
 def file_upload_section():
     st.header("File Upload")
-    omloopplanning_file = st.file_uploader("Choose the Excel file with the **omloopplanning**", type="xlsx")
-    dienstregeling_file = st.file_uploader("Choose the Excel file with the **dienstregeling** (usually named something like \"Connection data 20##-20## .xlsx\")", type="xlsx")
-    
-    # Check if a file has been uploaded
-    if omloopplanning_file is not None:
-        st.session_state.uploaded_omloopplanning = omloopplanning_file  # Save the file to session state
+    if st.button('Import data'):
+        # Toggle the visibility of the file uploader
+        st.session_state.show_uploader = not st.session_state.show_uploader
 
-    # Check if a file has been uploaded
-    if dienstregeling_file is not None:
-        st.session_state.uploaded_dienstregeling = dienstregeling_file  # Save the file to session state
+    # Show file uploader if the state is True
+    if st.session_state.show_uploader:
+        omloopplanning = st.file_uploader("Choose the Excel file with the omloopplanning", type="xlsx")
+        dienstregeling = st.file_uploader("Choose the Excel file with the dienstregeling (usually named something like \"Connection data 20##-20## .xlsx\")", type="xlsx")
 
-    if dienstregeling_file is not None and omloopplanning_file is not None:
+        # Check if a file has been uploaded
+        if omloopplanning is not None:
+            st.session_state.uploaded_omloopplanning = omloopplanning  # Save the file to session state
+            # Read the uploaded Excel file using pandas
+            df = pd.read_excel(omloopplanning)
+
+            # Display the DataFrame
+            st.write("Here is the content of the uploaded omloopplanning file:")
+            st.dataframe(df)
+            
+        # Check if a file has been uploaded
+        if dienstregeling is not None:
+            st.session_state.uploaded_dienstregeling = dienstregeling  # Save the file to session state
+            # Read the uploaded Excel file using pandas
+            df1 = pd.read_excel(dienstregeling, sheet_name="Dienstregeling")
+            df2 = pd.read_excel(dienstregeling, sheet_name="Afstandsmatrix")
+
+            # Display the DataFrame
+            st.write("Here is the content of the uploaded dienstregeling file.")
+            st.write("Dienstregeling:")    
+            st.dataframe(df1)
+            st.write("Afstandsmatrix:")
+            st.dataframe(df2)
+            
+        #display error for missing files
+        if omloopplanning is None:
+            st.write("Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
+        if dienstregeling is None:
+            st.write("Please upload a file like \"Connexxion data - 2024-2025.xlsx\", containing a sheet named \"Dienstregeling\" and \"Afstandsmatrix\" in the 'Import Data' section.")
+
+# Function to run a piece of code when button is clicked, but checks for file first
+def run_code_button():
+    st.header("Run Code")
+    if st.button("Run Code"):
         if st.session_state.uploaded_omloopplanning is None:
             st.error("Error: No Excel file with omloopplanning uploaded. Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
-        
         if st.session_state.uploaded_dienstregeling is None:
             st.error("Error: No Excel file with dienstregeling uploaded. Please upload a file like \"Connexxion data - 2024-2025.xlsx\", containing a sheet named \"Dienstregeling\" and \"Afstandsmatrix\" in the 'Import Data' section.")
-        
         if not (st.session_state.uploaded_omloopplanning is None) and not (st.session_state.uploaded_dienstregeling is None):
+            # load excel files into pandas
+            omloopplanning = pd.read_excel(st.session_state.uploaded_omloopplanning)
+            dienstregeling = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling")
+            afstandsmatrix = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
+            
             # put the dataframes from excel files in module rit_haalbaar_binnen_tijd
-            rit_haalbaar_binnen_tijd.omloopplanning = pd.read_excel(st.session_state.uploaded_omloopplanning)
-            rit_haalbaar_binnen_tijd.afstandsmatrix = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
+            rit_haalbaar_binnen_tijd.omloopplanning = omloopplanning
+            rit_haalbaar_binnen_tijd.afstandsmatrix = afstandsmatrix
+            rit_haalbaar_binnen_tijd.data_opschonen()
+            rit_haalbaar_binnen_tijd.kolommen_toevoegen_haalbaarheid()
             
             # output haalbaarheid
             st.write("Niet haalbare ritten: ")
             st.dataframe(rit_haalbaar_binnen_tijd.niet_haalbare_ritten())
             
             # put the dataframes from excel files in module rit_haalbaar_binnen_tijd
-            check_1_bus_per_rit.omloopplanning = pd.read_excel(st.session_state.uploaded_omloopplanning)
-            check_1_bus_per_rit.dienstregeling = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling")
-            check_1_bus_per_rit.afstandsmatrix = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
+            check_1_bus_per_rit.omloopplanning = omloopplanning
+            check_1_bus_per_rit.dienstregeling = dienstregeling
+            check_1_bus_per_rit.afstandsmatrix = afstandsmatrix
             
             # output dienstregeling juist ingevuld
             st.write("Onjuistheden in de invulling van de dienstregeling.")
             st.write("Alle ritten uit de dienstregelingen die door 0 of meerdere bussen gereden worden:")
             st.dataframe(check_1_bus_per_rit.niet_correcte_ritten())
-
-# Function to run a piece of code when button is clicked, but checks for file first
-def run_code_button():
-    if st.button('Show/Hide Raw Data'):
-        omloopplanning = pd.read_excel(st.session_state.uploaded_omloopplanning)
-        dienstregeling = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling")
-        afstandsmatrix = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
-        
-        # Display the DataFrames
-        st.write("Here is the content of the uploaded omloopplanning file:")
-        st.dataframe(omloopplanning)
-        st.write("Here is the content of the uploaded dienstregeling file.")
-        st.write("Dienstregeling:")    
-        st.dataframe(dienstregeling)
-        st.write("Afstandsmatrix:")
-        st.dataframe(afstandsmatrix)
-    
 
 # Main part of the script
 def main():
@@ -125,11 +144,11 @@ def main():
     # Initialize states
     initialize_states()
 
-    # # Product info section
-    # software_tool_information()
-    #
-    # # Add a separator between the sections
-    # st.markdown("---")
+    # Product info section
+    software_tool_information()
+
+    # Add a separator between the sections
+    st.markdown("---")
 
     # File upload section
     file_upload_section()
@@ -139,11 +158,11 @@ def main():
 
     run_code_button()
 
-    # # Add a separator between the sections
-    # st.markdown("---")
+    # Add a separator between the sections
+    st.markdown("---")
 
-    # # Additional info section
-    # results()
+    # Additional info section
+    results()
 
 # Run the app
 if __name__ == "__main__":

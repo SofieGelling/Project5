@@ -19,12 +19,25 @@ def initialisatie()->None:
 def data_opschonen():
     global data_opgeschoond
     # opvullen met nullen bij alle cellen waar geen buslijn nummer is ingevuld
+    print(f"afstandsmatrix: {afstandsmatrix}")
     afstandsmatrix["buslijn"].fillna(0, inplace=True)
     omloopplanning["buslijn"].fillna(0, inplace=True)
     
     # ongeldige kolommen verwijderen
     omloopplanning.drop([229.5, 'Unnamed: 12', "originele accucapaciteit van 300kWu"], axis=1, inplace=True)
     data_opgeschoond = True
+    
+def inladen(nieuwe_omloopplanning, nieuwe_afstandsmatrix):
+    global omloopplanning
+    global afstandsmatrix
+    global data_opgeschoond
+    global correctheid_berekend
+    omloopplanning = nieuwe_omloopplanning
+    afstandsmatrix = nieuwe_afstandsmatrix
+    data_opgeschoond = False
+    correctheid_berekend = False
+    data_opschonen()
+    kolommen_toevoegen_haalbaarheid()
 
 ## extra controle: print alle rijen waar de tijd in de kolommen "starttijd" en "starttijd datum" niet overeenkomen.
 # print(omloopplanning[omloopplanning[["starttijd", "starttijd datum"]].apply((lambda x: not str(x["starttijd datum"]).endswith(str(x["starttijd"]))), axis=1)])
@@ -99,7 +112,8 @@ def niet_haalbare_ritten():
 
 if __name__ == "__main__":
     initialisatie()
-    #kolommen_toevoegen_haalbaarheid()
+    # inladen(pd.read_excel("omloopplanning.xlsx"), pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name="Afstandsmatrix"))
+    
     omloopplanning.columns
     print("~~~~~~~~~ Ritten haalbaar binnen de tijd: ")
     print(haalbare_ritten())

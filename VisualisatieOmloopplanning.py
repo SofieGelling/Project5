@@ -75,6 +75,7 @@ def Visualiatie(Gelezen_document):
     plt.grid(axis='x', linestyle='--', alpha=0.5)
     plt.tight_layout()
     plt.show()
+    return fig, ax
 
 def Visualiatie_met_busnummers(file_path):
     df = file_path
@@ -147,6 +148,7 @@ def Visualiatie_met_busnummers(file_path):
     plt.grid(axis='x', linestyle='--', alpha=0.5)
     plt.tight_layout()
     plt.show()
+    return fig, ax
 
 
 
