@@ -6,10 +6,11 @@ from matplotlib.patches import Patch
 # Pad naar het Excel-bestand
 file_path = 'omloopplanning.xlsx'
 
-def Visualiatie(file_path):
+def Visualiatie(Gelezen_document):
     # Laad het bestand en verwijder extra spaties uit kolomnamen
-    df = pd.read_excel(file_path)
-    print(df.head(10))
+    #df = pd.read_excel(file_path)
+    #print(df.head(10))
+    df = Gelezen_document
     df.columns = df.columns.str.strip()  # Verwijder onzichtbare spaties rondom de kolomnamen
 
     # Zet start- en eindtijden om naar datetime voor plotten
@@ -76,8 +77,7 @@ def Visualiatie(file_path):
     plt.show()
 
 def Visualiatie_met_busnummers(file_path):
-    # Laad het bestand en verwijder extra spaties uit kolomnamen
-    df = pd.read_excel(file_path)
+    df = file_path
     df.columns = df.columns.str.strip()  # Verwijder onzichtbare spaties rondom de kolomnamen
 
     # Zet start- en eindtijden om naar datetime voor plotten
@@ -149,6 +149,5 @@ def Visualiatie_met_busnummers(file_path):
     plt.show()
 
 
-Visualiatie('omloopplanning.xlsx')
 
 
