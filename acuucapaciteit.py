@@ -1,15 +1,58 @@
-#%% OPENEN VAN HET BESTAND
 
 import pandas as pd
 
-def lezen_bestand(filepath):
+def voeg_idle_tijden_toe(df):
     """
-    Laad het excel bestand met de omloopplanning in een dataframe.
-    filepath : pad naar het excelbestand
-    omloopplanning_df : de omloopplanning gelezen en in een dataframe
+    Functie om idle-periodes toe te voegen aan de dataset wanneer er een pauze is tussen opeenvolgende ritten.
+    
+    Parameters:
+    df (pd.DataFrame): Dataframe met omloopplanning. Verwacht kolommen 'startlocatie', 'eindlocatie', 'starttijd datum', 'eindtijd datum', 'omloop nummer'.
+    
+    Returns:
+    pd.DataFrame: Dataframe met toegevoegde idle-periodes.
     """
-    omloopplanning_df = pd.read_excel(filepath)
-    return omloopplanning_df
+    # Zorg dat 'starttijd datum' en 'eindtijd datum' kolommen in datetime-formaat zijn
+    df['starttijd datum'] = pd.to_datetime(df['starttijd datum'])
+    df['eindtijd datum'] = pd.to_datetime(df['eindtijd datum'])
+    
+    # Sorteer de data op omloop nummer en starttijd voor een juiste volgorde van ritten
+    df = df.sort_values(by=['omloop nummer', 'starttijd datum']).reset_index(drop=True)
+    nieuwe_rijen = []  # Lege lijst om idle rijen op te slaan
+
+    # Loop door elke omloop (buslijn) en controleer de tijdsverschillen tussen ritten
+    for omloop_nummer, groep in df.groupby('omloop nummer'):
+        for i in range(len(groep) - 1):
+            huidige_rit = groep.iloc[i]
+            volgende_rit = groep.iloc[i + 1]
+            
+            # Haal de eindtijd van de huidige rit en starttijd van de volgende rit op
+            eindtijd_huidige = huidige_rit['eindtijd datum']
+            starttijd_volgende = volgende_rit['starttijd datum']
+            
+            # Bereken het tijdsverschil in minuten
+            tijdsverschil = (starttijd_volgende - eindtijd_huidige).total_seconds() / 60.0
+            
+            # Controleer of er een pauze is (bijvoorbeeld meer dan 1 minuut verschil)
+            if tijdsverschil > 1:
+                idle_rij = {
+                    'startlocatie': huidige_rit['eindlocatie'],
+                    'eindlocatie': huidige_rit['eindlocatie'],
+                    'starttijd': eindtijd_huidige.time(),  # Alleen tijd zonder datum
+                    'eindtijd': starttijd_volgende.time(),
+                    'activiteit': 'idle',
+                    'buslijn': None,
+                    'energieverbruik': 0.01,  # Energieverbruik tijdens idle
+                    'starttijd datum': eindtijd_huidige,
+                    'eindtijd datum': starttijd_volgende,
+                    'omloop nummer': omloop_nummer
+                }
+                nieuwe_rijen.append(idle_rij)
+
+    # Voeg de idle-rijen toe aan de originele dataframe en sorteer opnieuw
+    df = pd.concat([df, pd.DataFrame(nieuwe_rijen)], ignore_index=True)
+    df = df.sort_values(by=['omloop nummer', 'starttijd datum']).reset_index(drop=True)
+    
+    return df
 
 def status(omloopplanning_df, original_capacity, SOH, min_SOC_percentage):
     """
@@ -25,7 +68,7 @@ def status(omloopplanning_df, original_capacity, SOH, min_SOC_percentage):
     min_SOC_percentage = State of Charge minimale waarde (factor)
     """
     current_capacity = original_capacity * SOH # Bereken de huidige accucapaciteit gebaseerd op SOH
-    min_SOC_kWh = original_capacity * min_SOC_percentage # Minimale SOC in kWh
+    min_SOC_kWh = current_capacity * min_SOC_percentage # Minimale SOC in kWh
 
    
     omloopplanning_df['Huidige energie'] = 0.0 # Kolom voor de huidige hoeveelheid energie 
@@ -62,16 +105,82 @@ def status(omloopplanning_df, original_capacity, SOH, min_SOC_percentage):
 def filter(omloopplanning_df): # Filter de DataFrame om alleen de rijen zonder "OK" te tonen
     df_filtered = omloopplanning_df[omloopplanning_df['Status'] == 'Opladen nodig']
     return print(df_filtered)
+   
+def Afstand_omloop_toevoegen(omloop_file_path, connexxion_file_path):
     
-"""
-original_capacity = 300  -- Originele accucapaciteit in kWh
-SOH_min = 0.85  -- Minimale SOH (State of Health)
-SOH_max = 0.95  -- Maximale SOH (State of Health)
-min_SOC_percentage = 0.10  -- Minimale SOC (State of Charge), 10%
- """
+    """
+    Voeg een kolom 'afstand' toe aan omloopplanning_df op basis van gegevens in dienstregeling_df.
+    
+    Parameters:
+    omloopplanning_df (pd.DataFrame): Dataframe met omloopplanning data.
+    dienstregeling_df (pd.DataFrame): Dataframe met dienstregeling data.
+    
+    Returns:
+    pd.DataFrame: Dataframe met toegevoegde kolom 'afstand'.
+    """
+    
+    # Read the Excel files
+    omloopplanning_data = omloop_file_path
+    connexxion_data_distances = connexxion_file_path  # Read distances data from sheet 2
 
-omloopplanning_df = lezen_bestand("/Users/esthergellings/Desktop/School/project/Project5/omloopplanning.xlsx")
-omloopplanning = status(omloopplanning_df, 300, 0.90, 0.10)
-Overzicht_df = (omloopplanning[['omloop nummer', 'energieverbruik', 'Huidige energie', 'Status']].head(200))
-Gefilterd = filter(Overzicht_df)
-print(Gefilterd)
+    # Set up a lookup dictionary with both (start, end, buslijn) and (start, end) keys
+    distance_lookup = {}
+    for _, row in connexxion_data_distances.iterrows():
+        key_with_buslijn = (row['startlocatie'], row['eindlocatie'], row.get('buslijn', None))
+        key_without_buslijn = (row['startlocatie'], row['eindlocatie'])
+        distance_lookup[key_with_buslijn] = row['afstand in meters']
+        distance_lookup[key_without_buslijn] = row['afstand in meters']  # For entries without a bus line
+
+    # Define a function to calculate distance using the lookup, handling 'opladen' and 'idle'
+    def calculate_distance(row):
+        if row['activiteit'] in ['idle', 'opladen']:
+            return 0
+        # Attempt to find the distance with and without buslijn
+        key_with_buslijn = (row['startlocatie'], row['eindlocatie'], row.get('buslijn', None))
+        key_without_buslijn = (row['startlocatie'], row['eindlocatie'])
+        return distance_lookup.get(key_with_buslijn) or distance_lookup.get(key_without_buslijn) or None
+
+    # Apply the distance calculation to each row
+    omloopplanning_data['afstand in meters'] = omloopplanning_data.apply(calculate_distance, axis=1)
+    
+    return omloopplanning_data
+
+def add_energy_usage_column(df, soh_value=0.85):
+    """
+    Adds a 'energieverbruik nieuw' column based on specified conditions.
+    """
+    original_capacity_kWh = 300
+    max_charge_percentage = 0.9
+    charge_rate_kW = 450
+    max_usable_capacity_kWh = original_capacity_kWh * soh_value * max_charge_percentage
+
+    def calculate_energy_usage(row):
+        distance_km = (row['afstand in meters'] or 0) / 1000
+        if row['activiteit'] == 'idle':
+            return 0.01
+        elif row['activiteit'] == 'opladen':
+            start_time = pd.to_datetime(row['starttijd datum'])
+            end_time = pd.to_datetime(row['eindtijd datum'])
+            charge_time_hours = (end_time - start_time).total_seconds() / 3600
+            energy_added_kWh = min(charge_time_hours * charge_rate_kW, max_usable_capacity_kWh)
+            return -energy_added_kWh
+        else:
+            return (0.7 + 2.5) / 2 * distance_km
+
+    df['energieverbruik nieuw'] = df.apply(calculate_energy_usage, axis=1)
+    return df
+
+
+omloopplanning_df = pd.read_excel("omloopplanning.xlsx")
+connexxion_data = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name=1)
+
+df = voeg_idle_tijden_toe(omloopplanning_df)
+df = Afstand_omloop_toevoegen(df, connexxion_data)
+df = add_energy_usage_column(df, soh_value=0.85)
+
+print(df[['activiteit', 'buslijn', 'energieverbruik', 'omloop nummer', 'afstand in meters', 'energieverbruik nieuw']].head(50))
+
+#import VisualisatieOmloopplanning as VO
+#VO.Visualiatie(df)
+
+
