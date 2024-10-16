@@ -21,8 +21,11 @@ def verschil_materiaal_ritten():
     verschil = aantal_materiaal_ritten_nieuw - aantal_materiaal_ritten
     return verschil
 
-
-
-
-
+def verschil_tijd_materiaal_ritten():
+    materiaal_ritten = omloopplanning[omloopplanning['activiteit'] == 'materiaal rit']
+    materiaal_ritten_nieuw = omloopplanning_nieuw[omloopplanning_nieuw['activiteit'] == 'materiaal rit']
+    materiaal_ritten['tijd_minuten'] = (materiaal_ritten['eindtijd datum'] - materiaal_ritten['starttijd datum']).dt.total_seconds() / 60
+    materiaal_ritten_nieuw['tijd_minuten'] = (materiaal_ritten_nieuw['eindtijd datum'] - materiaal_ritten_nieuw['starttijd datum']).dt.total_seconds() / 60
+    verschil = materiaal_ritten_nieuw['tijd_minuten'].sum() - materiaal_ritten['tijd_minuten'].sum()
+    return verschil
 
