@@ -4,6 +4,12 @@ import pandas as pd
 import rit_haalbaar_binnen_tijd
 import check_1_bus_per_rit
 import VisualisatieOmloopplanning
+import acuucapaciteit
+
+#parameters voor de accu's, met standaardwaarden 
+original_capacity = 300
+SOH = 0.85
+min_SOC_percentage = 0.1
 
 # Inject custom CSS for button styling
 def custom_button_css():
@@ -100,9 +106,18 @@ def file_upload_section():
             st.write("Onjuistheden in de invulling van de dienstregeling. \n Dit zijn ritten uit de dienstregelingen die: \n - door geen enkele omloop ingevuld worden; \n - die door meerdere omlopen tegelijk ingevuld worden;")
             st.dataframe(check_1_bus_per_rit.niet_correcte_ritten())
             st.markdown("---")
+            df = acuucapaciteit.voeg_idle_tijden_toe(pd.read_excel(st.session_state.uploaded_omloopplanning))
+            if False:
+                # accu-inhoud te laag
+                df = acuucapaciteit.Afstand_omloop_toevoegen(df, pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix"))
+                df = acuucapaciteit.add_energy_usage_column(df, soh_value=0.85)
+                st.dataframe(acuucapaciteit.filter(acuucapaciteit.status(df, 300, 0.85, 0.1)))
+                st.button("accu")
+                print("Accucapaciteit niet opgeladen:")
+                st.markdown(acuucapaciteit.status(df, 300, 0.85, 0.1))
             
             #visualisatie omloopplanning
-            visualisatie, ax_wat_dat_ook_mag_betekenen = VisualisatieOmloopplanning.Visualiatie(pd.read_excel(st.session_state.uploaded_omloopplanning))
+            visualisatie, ax_wat_dat_ook_mag_betekenen = VisualisatieOmloopplanning.Visualiatie(df)
             st.pyplot(visualisatie)
 
 # Function to run a piece of code when button is clicked, but checks for file first

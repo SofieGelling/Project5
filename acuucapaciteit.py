@@ -104,7 +104,7 @@ def status(omloopplanning_df, original_capacity, SOH, min_SOC_percentage):
 
 def filter(omloopplanning_df): # Filter de DataFrame om alleen de rijen zonder "OK" te tonen
     df_filtered = omloopplanning_df[omloopplanning_df['Status'] == 'Opladen nodig']
-    return print(df_filtered)
+    return df_filtered
    
 def Afstand_omloop_toevoegen(omloop_file_path, connexxion_file_path):
     
@@ -174,13 +174,15 @@ def add_energy_usage_column(df, soh_value=0.85):
 omloopplanning_df = pd.read_excel("omloopplanning.xlsx")
 connexxion_data = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name=1)
 
-df = voeg_idle_tijden_toe(omloopplanning_df)
-df = Afstand_omloop_toevoegen(df, connexxion_data)
-df = add_energy_usage_column(df, soh_value=0.85)
+if __name__ == "__main__":
+    df = voeg_idle_tijden_toe(omloopplanning_df)
+    df = Afstand_omloop_toevoegen(df, connexxion_data)
+    df = add_energy_usage_column(df, soh_value=0.85)
 
-print(df[['activiteit', 'buslijn', 'energieverbruik', 'omloop nummer', 'afstand in meters', 'energieverbruik nieuw']].head(50))
+    #print(df[['activiteit', 'buslijn', 'energieverbruik', 'omloop nummer', 'afstand in meters', 'energieverbruik nieuw']].head(50))
 
-#import VisualisatieOmloopplanning as VO
-#VO.Visualiatie(df)
+    #import VisualisatieOmloopplanning as VO
+    #VO.Visualiatie(df)
 
+    print(filter(status(df, 300, 0.85, 0.1).head(50)))
 
