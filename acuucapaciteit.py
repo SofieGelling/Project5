@@ -82,7 +82,7 @@ def status(omloopplanning_df, original_capacity, SOH, min_SOC_percentage):
 
     
         for index, row in groep.iterrows(): # Itereer door elke rij binnen de huidige omloop
-            verbruik = row['energieverbruik']
+            verbruik = row['energieverbruik nieuw']
             current_SOC -= verbruik  # Trek het verbruik van de SOC af
         
             groep.at[index, 'Huidige energie'] = current_SOC # Sla de huidige energie op in de dataframe
@@ -177,8 +177,10 @@ connexxion_data = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name=1
 df = voeg_idle_tijden_toe(omloopplanning_df)
 df = Afstand_omloop_toevoegen(df, connexxion_data)
 df = add_energy_usage_column(df, soh_value=0.85)
+df = status(df, 300, 0.90, 0.10)
 
-print(df[['activiteit', 'buslijn', 'energieverbruik', 'omloop nummer', 'afstand in meters', 'energieverbruik nieuw']].head(50))
+pd.set_option('display.max_rows', 100)
+print(df[['activiteit', 'buslijn', 'energieverbruik', 'omloop nummer', 'afstand in meters', 'energieverbruik nieuw', 'Huidige energie', 'Status']].head(100))
 
 #import VisualisatieOmloopplanning as VO
 #VO.Visualiatie(df)
