@@ -24,7 +24,10 @@ def data_opschonen():
     omloopplanning["buslijn"].fillna(0, inplace=True)
     
     # ongeldige kolommen verwijderen
-    omloopplanning.drop([229.5, 'Unnamed: 12', "originele accucapaciteit van 300kWu"], axis=1, inplace=True)
+    try:
+        omloopplanning.drop([229.5, 'Unnamed: 12', "originele accucapaciteit van 300kWu"], axis=1, inplace=True)
+    except:
+        pass
     data_opgeschoond = True
     
 def inladen(nieuwe_omloopplanning, nieuwe_afstandsmatrix):

@@ -37,9 +37,14 @@ def data_opschonen():
     # opvullen met nullen bij alle cellen waar geen buslijn nummer is ingevuld
     afstandsmatrix["buslijn"].fillna(0, inplace=True)
     omloopplanning["buslijn"].fillna(0, inplace=True)
+    
+    # ongeldige kolommen verwijderen
+    try:
+        omloopplanning.drop([229.5, 'Unnamed: 12', "originele accucapaciteit van 300kWu"], axis=1, inplace=True)
+    except:
+        pass
     data_opgeschoond = True
     
-    omloopplanning.drop([229.5, 'Unnamed: 12', "originele accucapaciteit van 300kWu"], axis=1, inplace=True)
 
 def aantal_bussen_ingepland_voor_rit(rit:pd.DataFrame)->int:
     aantal_bussen_voor_dienst = omloopplanning[(omloopplanning["startlocatie"] == rit["startlocatie"])
