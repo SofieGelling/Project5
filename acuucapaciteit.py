@@ -33,7 +33,7 @@ def voeg_idle_tijden_toe(df):
             tijdsverschil = (starttijd_volgende - eindtijd_huidige).total_seconds() / 60.0
             
             # Controleer of er een pauze is (bijvoorbeeld meer dan 1 minuut verschil)
-            if tijdsverschil > 1:
+            if tijdsverschil > 0:
                 idle_rij = {
                     'startlocatie': huidige_rit['eindlocatie'],
                     'eindlocatie': huidige_rit['eindlocatie'],
@@ -51,6 +51,41 @@ def voeg_idle_tijden_toe(df):
     # Voeg de idle-rijen toe aan de originele dataframe en sorteer opnieuw
     df = pd.concat([df, pd.DataFrame(nieuwe_rijen)], ignore_index=True)
     df = df.sort_values(by=['omloop nummer', 'starttijd datum']).reset_index(drop=True)
+    
+    return df
+
+def detecteer_en_verwijder_foute_rijen(df):
+    """
+    Functie om rijen te detecteren waar de starttijd van een rit niet overeenkomt met de eindtijd
+    van de vorige rit binnen dezelfde omloop. Deze rijen worden geprint en vervolgens verwijderd.
+    
+    Parameters:
+    df (pd.DataFrame): DataFrame met kolommen 'starttijd datum', 'eindtijd datum' en 'omloop nummer'.
+    
+    Returns:
+    pd.DataFrame: DataFrame zonder de foute rijen.
+    """
+    # Sorteer de data op 'omloop nummer' en 'starttijd datum' om de ritten op volgorde te controleren
+    df = df.sort_values(by=['omloop nummer', 'starttijd datum']).reset_index(drop=True)
+    foute_rijen = []  # Lijst om de indexen van foute rijen op te slaan
+
+    for i in range(len(df) - 1):
+        huidige_rit = df.iloc[i]
+        volgende_rit = df.iloc[i + 1]
+
+        # Controleer of beide ritten bij dezelfde omloop horen
+        if huidige_rit['omloop nummer'] == volgende_rit['omloop nummer']:
+            eindtijd_huidige = huidige_rit['eindtijd datum']
+            starttijd_volgende = volgende_rit['starttijd datum']
+
+            # Controleer of er een mismatch is tussen eindtijd en starttijd
+            if starttijd_volgende != eindtijd_huidige:
+                foute_rijen.append(i + 1)  # Voeg de index van de volgende rit toe aan de lijst van fouten
+                # print(f"Fout gevonden op rij {i + 1}: omloop {huidige_rit['omloop nummer']}, "
+                      # f"eindtijd huidige rit {eindtijd_huidige}, starttijd volgende rit {starttijd_volgende}")
+
+    # Verwijder de foute rijen uit de DataFrame
+    df = df.drop(foute_rijen).reset_index(drop=True)
     
     return df
 
@@ -170,25 +205,58 @@ def add_energy_usage_column(df, soh_value=0.85):
     df['energieverbruik nieuw'] = df.apply(calculate_energy_usage, axis=1)
     return df
 
+def tel_ritten_per_type(df):
+    """
+    Functie om het aantal dienstritten, materieelritten, en oplaadritten in de DataFrame te tellen.
+    
+    Parameters:
+    df (pd.DataFrame): DataFrame met een kolom 'activiteit' waarin de soort rit staat.
+    
+    Returns:
+    dict: Dictionary met de aantallen per type rit.
+    """
+    # Controleer of de kolom 'activiteit' aanwezig is in de DataFrame
+    if 'activiteit' not in df.columns:
+        raise ValueError("De kolom 'activiteit' ontbreekt in de DataFrame.")
 
-omloopplanning_df = pd.read_excel("omloopplanning.xlsx")
-connexxion_data = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name=1)
+    # Tel het aantal rijen per activiteit
+    dienstritten = df[df['activiteit'] == 'dienst rit'].shape[0]
+    materiaalritten = df[df['activiteit'] == 'materiaal rit'].shape[0]
+    oplaadritten = df[df['activiteit'] == 'opladen'].shape[0]
+    
+    # Maak een dictionary om de resultaten overzichtelijk terug te geven
+    ritten_telling = {
+        'Dienstritten': dienstritten,
+        'Materiaalritten': materiaalritten,
+        'Oplaadritten': oplaadritten
+    }
+    
+    print("Aantal ritten per type:")
+    for rit_type, aantal in ritten_telling.items():
+        print(f"{rit_type}: {aantal}")
+    
+    return ritten_telling
 
-df = voeg_idle_tijden_toe(omloopplanning_df)
-df = Afstand_omloop_toevoegen(df, connexxion_data)
-df = add_energy_usage_column(df, soh_value=0.85)
-df = status(df, 300, 0.90, 0.10)
-filter_df = filter(df)
-filter_df = filter_df[['startlocatie', 'eindlocatie', 'starttijd','eindtijd','activiteit', 'buslijn', 'energieverbruik','starttijd datum', 'eindtijd datum', 'omloop nummer']]
-filter_df = filter_df.fillna('')
-filter_df.to_excel("Gefilterd.xlsx", index=False)
+def main():
+    omloopplanning_df = pd.read_excel("omloopplanning.xlsx")
+    connexxion_data = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name=1)
+
+    df = voeg_idle_tijden_toe(omloopplanning_df)
+    #tel_ritten_per_type(df)
+    df = detecteer_en_verwijder_foute_rijen(df)
+    #tel_ritten_per_type(df)
+    df = voeg_idle_tijden_toe(df)
+    df = Afstand_omloop_toevoegen(df, connexxion_data)
+    df = add_energy_usage_column(df, soh_value=0.85)
+    df = status(df, 300, 0.90, 0.10)
+    df.to_excel("nieuwe_data.xlsx", index=False)
 
 
-#pd.set_option('display.max_rows', 100)
-#print(filter_df[['activiteit', 'buslijn', 'energieverbruik', 'omloop nummer', 'afstand in meters', 'energieverbruik nieuw', 'Huidige energie', 'Status']].head(100))
+    #pd.set_option('display.max_rows', 100)
+    #print(filter_df[['activiteit', 'buslijn', 'energieverbruik', 'omloop nummer', 'afstand in meters', 'energieverbruik nieuw', 'Huidige energie', 'Status']].head(100))
 
-import VisualisatieOmloopplanning as VO
-#kan kiezen uit VO.Visualiatie of VO.Visualiatie_met_busnummers
-#VO.Visualiatie(df)
+    import VisualisatieOmloopplanning as VO
+    #kan kiezen uit VO.Visualiatie of VO.Visualiatie_met_busnummers
+    VO.visualiseer_omloopplanning_met_oplaadmarkering(df)
 
-
+main()
