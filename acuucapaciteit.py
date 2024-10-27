@@ -1,5 +1,5 @@
-
 import pandas as pd
+import VisualisatieOmloopplanning as VO
 
 def voeg_idle_tijden_toe(df):
     """
@@ -237,26 +237,36 @@ def tel_ritten_per_type(df):
     
     return ritten_telling
 
+def check_oplaadtijd(df):
+    # Filter de DataFrame voor alleen de opladen-activiteiten
+    opladen_df = df[df['activiteit'] == 'opladen'].copy()
+
+    # Bereken de duur in minuten
+    opladen_df['duur'] = (opladen_df['eindtijd datum'] - opladen_df['starttijd datum']).dt.total_seconds() / 60
+
+    # Filter op rijen waar de duur minder dan 15 minuten is
+    korte_oplaadperiodes = opladen_df[opladen_df['duur'] < 15]
+
+    if korte_oplaadperiodes.empty:
+        print("Er zijn geen opladen-activiteiten met een duur van minder dan 15 minuten.")
+    else:
+        print("Opladen-activiteiten met een duur van minder dan 15 minuten:")
+        print(korte_oplaadperiodes[['omloop nummer', 'starttijd datum', 'eindtijd datum', 'duur']])
+
 def main():
     omloopplanning_df = pd.read_excel("omloopplanning.xlsx")
     connexxion_data = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name=1)
 
     df = voeg_idle_tijden_toe(omloopplanning_df)
-    #tel_ritten_per_type(df)
+    # tel_ritten_per_type(df)
     df = detecteer_en_verwijder_foute_rijen(df)
-    #tel_ritten_per_type(df)
+    # tel_ritten_per_type(df)
     df = voeg_idle_tijden_toe(df)
     df = Afstand_omloop_toevoegen(df, connexxion_data)
     df = add_energy_usage_column(df, soh_value=0.85)
     df = status(df, 300, 0.90, 0.10)
-    df.to_excel("nieuwe_data.xlsx", index=False)
-
-
-    #pd.set_option('display.max_rows', 100)
-    #print(filter_df[['activiteit', 'buslijn', 'energieverbruik', 'omloop nummer', 'afstand in meters', 'energieverbruik nieuw', 'Huidige energie', 'Status']].head(100))
-
-    import VisualisatieOmloopplanning as VO
-    #kan kiezen uit VO.Visualiatie of VO.Visualiatie_met_busnummers
-    VO.visualiseer_omloopplanning_met_oplaadmarkering(df)
+    # df.to_excel("nieuwe_data.xlsx", index=False)
+    check_oplaadtijd(df)
+    # VO.visualiseer_omloopplanning_met_oplaadmarkering(df)
 
 main()
