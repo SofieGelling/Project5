@@ -62,7 +62,7 @@ def Visualiatie(Gelezen_document):
         Patch(facecolor='#FF3E96', label='materiaal rit ehvbst -> ehvapt'),
         Patch(facecolor='lightgrey', label='idle'),
         Patch(facecolor='#00EE00', label='opladen'),
-        Patch(facecolor='#C1FFC1', label='materiaalrit naar garage')
+        Patch(facecolor='#C1FFC1', label='deadhead trip naar garage')
     ]
     ax.legend(handles=legend_elements, loc='upper right')
 
@@ -135,7 +135,7 @@ def Visualiatie_met_busnummers(file_path):
         Patch(facecolor='#FF3E96', label='materiaal rit ehvbst -> ehvapt'),
         Patch(facecolor='lightgrey', label='idle'),
         Patch(facecolor='#00EE00', label='opladen'),
-        Patch(facecolor='#C1FFC1', label='materiaalrit naar garage')
+        Patch(facecolor='#C1FFC1', label='deadhead trip naar garage')
     ]
     ax.legend(handles=legend_elements, loc='upper right')
 
@@ -243,7 +243,7 @@ def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
         Patch(facecolor='#FFD700', label='materiaal rit ehvbst -> ehvapt'),
         Patch(facecolor='lightgrey', label='idle'),
         Patch(facecolor='#00EE00', label='opladen'),
-        Patch(facecolor='#C1FFC1', label='materiaalrit naar garage'),
+        Patch(facecolor='#C1FFC1', label='deadhead trip naar garage'),
         Patch(facecolor='red', label='Opladen nodig (markering)', alpha=0.3)
     ]
     ax.legend(handles=legend_elements, loc='upper right')

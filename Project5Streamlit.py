@@ -64,8 +64,8 @@ def results():
 # Function for uploading Excel files
 def file_upload_section():
     st.header("File Upload")
-    omloopplanning_file = st.file_uploader("Choose the Excel file with the **omloopplanning**", type="xlsx")
-    dienstregeling_file = st.file_uploader("Choose the Excel file with the **dienstregeling** (usually named something like \"Connection data 20##-20## .xlsx\")", type="xlsx")
+    omloopplanning_file = st.file_uploader("Choose the Excel file with the **bus planning**", type="xlsx")
+    dienstregeling_file = st.file_uploader("Choose the Excel file with the **time table** (usually named something like \"Connection data 20##-20## .xlsx\")", type="xlsx")
     
     # Check if a file has been uploaded
     if omloopplanning_file is not None:
@@ -78,7 +78,7 @@ def file_upload_section():
     if dienstregeling_file is not None and omloopplanning_file is not None:
         
         if st.session_state.uploaded_omloopplanning is None:
-            st.error("Error: No Excel file with omloopplanning uploaded. Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
+            st.error("Error: No Excel file with bus planning uploaded. Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
         
         if st.session_state.uploaded_dienstregeling is None:
             st.error("Error: No Excel file with dienstregeling uploaded. Please upload a file like \"Connexxion data - 2024-2025.xlsx\", containing a sheet named \"Dienstregeling\" and \"Afstandsmatrix\" in the 'Import Data' section.")
@@ -113,10 +113,10 @@ def raw_data_section():
         afstandsmatrix = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
         
         # Display the DataFrames
-        st.write("Here is the content of the uploaded omloopplanning file:")
+        st.write("Here is the content of the uploaded bus planning file:")
         st.dataframe(omloopplanning)
-        st.write("Here is the content of the uploaded dienstregeling file.")
-        st.write("Dienstregeling:")    
+        st.write("Here is the content of the uploaded Time table file.")
+        st.write("Time table:")    
         st.dataframe(dienstregeling)
         st.write("Afstandsmatrix:")
         st.dataframe(afstandsmatrix)
