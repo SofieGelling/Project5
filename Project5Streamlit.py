@@ -4,6 +4,7 @@ import pandas as pd
 import rit_haalbaar_binnen_tijd
 import check_1_bus_per_rit
 import VisualisatieOmloopplanning
+import acuucapaciteit as AC
 
 # Inject custom CSS for button styling
 def custom_button_css():
@@ -102,7 +103,15 @@ def file_upload_section():
             st.markdown("---")
             
             #visualisatie omloopplanning
-            visualisatie, ax_wat_dat_ook_mag_betekenen = VisualisatieOmloopplanning.Visualiatie(pd.read_excel(st.session_state.uploaded_omloopplanning))
+            omloopplanning = pd.read_excel(st.session_state.uploaded_omloopplanning)
+            connexxion_data = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name = 1 )
+            df = AC.voeg_idle_tijden_toe(omloopplanning)
+            df = AC.detecteer_en_verwijder_foute_rijen(df)
+            df = AC.voeg_idle_tijden_toe(df)
+            df = AC.Afstand_omloop_toevoegen(df, connexxion_data)
+            df = AC.add_energy_usage_column(df, soh_value=0.85)
+            df = AC.status(df, 300, 0.90, 0.10)
+            visualisatie, ax_wat_dat_ook_mag_betekenen = VisualisatieOmloopplanning.visualiseer_omloopplanning_met_oplaadmarkering(df)
             st.pyplot(visualisatie)
 
 # Function to run a piece of code when button is clicked, but checks for file first
