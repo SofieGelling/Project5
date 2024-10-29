@@ -233,18 +233,18 @@ def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
     ax.set_yticks(range(len(y_labels)))
     ax.set_yticklabels(y_labels)
     ax.set_xlabel("Time")
-    ax.set_ylabel("Runs")
+    ax.set_ylabel("Busses")
 
     # Legenda voor de kleuren
     legend_elements = [
-        Patch(facecolor='#4682B4', label='dienst rit ehvapt -> ehvbst (heenrit)'),
-        Patch(facecolor='#6495ED', label='dienst rit ehvbst -> ehvapt (terugrit)'),
-        Patch(facecolor='#FF8C00', label='materiaal rit ehvapt -> ehvbst'),
-        Patch(facecolor='#FFD700', label='materiaal rit ehvbst -> ehvapt'),
-        Patch(facecolor='lightgrey', label='idle'),
-        Patch(facecolor='#00EE00', label='opladen'),
-        Patch(facecolor='#C1FFC1', label='materiaalrit naar garage'),
-        Patch(facecolor='red', label='Opladen nodig (markering)', alpha=0.3)
+        Patch(facecolor='#4682B4', label='Service trip -> ehvbst (outbound)'),
+        Patch(facecolor='#6495ED', label='Service trip -> ehvapt (return)'),
+        Patch(facecolor='#FF8C00', label='Non-revenue trip ehvapt -> ehvbst'),
+        Patch(facecolor='#FFD700', label='Non-revenue trip ehvbst -> ehvapt'),
+        Patch(facecolor='lightgrey', label='Idle'),
+        Patch(facecolor='#00EE00', label='Charging'),
+        Patch(facecolor='#C1FFC1', label='Non-revenue trip to garage'),
+        Patch(facecolor='red', label='Charging needed (marked)', alpha=0.3)
     ]
     ax.legend(handles=legend_elements, loc='upper right')
 
@@ -253,7 +253,7 @@ def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 
     # Laat de titel en rasterinstellingen zien
-    plt.title("Omloopplanning Gantt Chart met Doorlopende Oplaad Markering")
+    plt.title("Bus Schedule Gantt Chart")
     plt.grid(axis='x', linestyle='--', alpha=0.5)
     plt.tight_layout()
     plt.show()
