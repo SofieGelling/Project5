@@ -1,4 +1,4 @@
-# streamlit run Project5Streamlit.py
+# streamlit run Project5StreamlitLocal.py
 import streamlit as st
 import pandas as pd
 import rit_haalbaar_binnen_tijd
@@ -49,7 +49,7 @@ def software_tool_information():
 
     # Conditionally display or hide the information
     if st.session_state.show_info:
-        st.info("**Software tool Information**\n- Description\n- Usage\n- Data type\n- Output")
+        st.info("**Software tool information**\n- Description\n- Usage\n- Data type\n- Output")
 
 # Function for results section
 def results():
@@ -64,8 +64,8 @@ def results():
 # Function for uploading Excel files
 def file_upload_section():
     st.header("File Upload")
-    omloopplanning_file = st.file_uploader("Choose the Excel file with the **omloopplanning**", type="xlsx")
-    dienstregeling_file = st.file_uploader("Choose the Excel file with the **dienstregeling** (usually named something like \"Connection data 20##-20## .xlsx\")", type="xlsx")
+    omloopplanning_file = st.file_uploader("Choose the Excel file with the filled in **bus schedule** (ussualy named something like \"omloopplanning.xlsx\")", type="xlsx")
+    dienstregeling_file = st.file_uploader("Choose the Excel file with the **bus timetable** (usually named something like \"Connection data 20##-20## .xlsx\")", type="xlsx")
     
     # Check if a file has been uploaded
     if omloopplanning_file is not None:
@@ -78,17 +78,17 @@ def file_upload_section():
     if dienstregeling_file is not None and omloopplanning_file is not None:
         
         if st.session_state.uploaded_omloopplanning is None:
-            st.error("Error: No Excel file with omloopplanning uploaded. Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
+            st.error("Error: No Excel file with the filled in bus schedule uploaded. Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
         
         if st.session_state.uploaded_dienstregeling is None:
-            st.error("Error: No Excel file with dienstregeling uploaded. Please upload a file like \"Connexxion data - 2024-2025.xlsx\", containing a sheet named \"Dienstregeling\" and \"Afstandsmatrix\" in the 'Import Data' section.")
+            st.error("Error: No Excel file with a bus timetable uploaded. Please upload a file like \"Connexxion data - 2024-2025.xlsx\", containing a sheet named \"Dienstregeling\" and \"Afstandsmatrix\" in the 'Import Data' section.")
         
         st.markdown("---")
         if not (st.session_state.uploaded_omloopplanning is None) and not (st.session_state.uploaded_dienstregeling is None):
             # haalbaarheid
             rit_haalbaar_binnen_tijd.inladen(pd.read_excel(st.session_state.uploaded_omloopplanning),
                                              pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name="Afstandsmatrix"))
-            st.write("Niet haalbare ritten: ")
+            st.write("Infeasible trips:")
             st.dataframe(rit_haalbaar_binnen_tijd.niet_haalbare_ritten())
             st.markdown("---")
             
@@ -97,7 +97,7 @@ def file_upload_section():
             check_1_bus_per_rit.inladen(pd.read_excel(st.session_state.uploaded_omloopplanning), 
                                         pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix"),
                                         pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling"))
-            st.write("Onjuistheden in de invulling van de dienstregeling. \n Dit zijn ritten uit de dienstregelingen die: \n - door geen enkele omloop ingevuld worden; \n - die door meerdere omlopen tegelijk ingevuld worden;")
+            st.write("Inaccuracies in the implementation of the bus schedule. \n These are trips from the schedule that: \n - are not assigned to any bus schedule; \n - are assigned to multiple bus schedules simultaneously.")
             st.dataframe(check_1_bus_per_rit.niet_correcte_ritten())
             st.markdown("---")
             
@@ -113,12 +113,12 @@ def raw_data_section():
         afstandsmatrix = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
         
         # Display the DataFrames
-        st.write("Here is the content of the uploaded omloopplanning file:")
+        st.write("Here is the content of the uploaded bus schedule:")
         st.dataframe(omloopplanning)
-        st.write("Here is the content of the uploaded dienstregeling file.")
-        st.write("Dienstregeling:")    
+        st.write("Here is the content of the uploaded bus timetable.")
+        st.write("Bus timetable:")    
         st.dataframe(dienstregeling)
-        st.write("Afstandsmatrix:")
+        st.write("Distance matrix:")
         st.dataframe(afstandsmatrix)
     
 
@@ -154,7 +154,6 @@ def main():
 # Run the app
 if __name__ == "__main__":
     main()
-
 
 
 
