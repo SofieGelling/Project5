@@ -57,7 +57,7 @@ def aantal_bussen_ingepland_voor_rit(rit:pd.DataFrame)->int:
 def kolommen_toevoegen_aantal_bussen():
     global correctheid_berekend
     dienstregeling.iat[1,1] = "06:05"
-    dienstregeling["aantal bussen die deze rit rijdt"] = dienstregeling.apply(aantal_bussen_ingepland_voor_rit, axis=1)
+    dienstregeling["Number of busses planned for this trip"] = dienstregeling.apply(aantal_bussen_ingepland_voor_rit, axis=1)
     correctheid_berekend = True
 
 def correcte_ritten():
@@ -65,14 +65,14 @@ def correcte_ritten():
         data_opschonen()
     if correctheid_berekend == False:
         kolommen_toevoegen_aantal_bussen()
-    return dienstregeling[dienstregeling["aantal bussen die deze rit rijdt"] == 1]
+    return dienstregeling[dienstregeling["Number of busses planned for this trip"] == 1]
     
 def niet_correcte_ritten():
     if data_opgeschoond == False:
         data_opschonen()
     if correctheid_berekend == False:
         kolommen_toevoegen_aantal_bussen()
-    return dienstregeling[dienstregeling["aantal bussen die deze rit rijdt"] != 1]
+    return dienstregeling[dienstregeling["Number of busses planned for this trip"] != 1]
 
 if __name__ == "__main__":
     initialisatie()

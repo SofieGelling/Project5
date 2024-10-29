@@ -4,6 +4,8 @@ import pandas as pd
 import rit_haalbaar_binnen_tijd
 import check_1_bus_per_rit
 import VisualisatieOmloopplanning
+import acuucapaciteit as AC
+import DataframeCleaning
 
 # Inject custom CSS for button styling
 def custom_button_css():
@@ -49,7 +51,7 @@ def software_tool_information():
 
     # Conditionally display or hide the information
     if st.session_state.show_info:
-        st.info("**Software tool Information**\n- Description\n- Usage\n- Data type\n- Output")
+        st.info("**Software tool information**\n- Description\n- Usage\n- Data type\n- Output")
 
 # Function for results section
 def results():
@@ -64,7 +66,7 @@ def results():
 # Function for uploading Excel files
 def file_upload_section():
     st.header("File Upload")
-    omloopplanning_file = st.file_uploader("Choose the Excel file with the **bus planning**", type="xlsx")
+    omloopplanning_file = st.file_uploader("Choose the Excel file with the filled in **bus planning** (usually named something like \"omloopplanning.xlsx\")", type="xlsx")
     dienstregeling_file = st.file_uploader("Choose the Excel file with the **time table** (usually named something like \"Connection data 20##-20## .xlsx\")", type="xlsx")
     
     # Check if a file has been uploaded
@@ -78,18 +80,21 @@ def file_upload_section():
     if dienstregeling_file is not None and omloopplanning_file is not None:
         
         if st.session_state.uploaded_omloopplanning is None:
-            st.error("Error: No Excel file with bus planning uploaded. Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
+            st.error("Error: No Excel file uploaded with the filled in bus planning. Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
         
         if st.session_state.uploaded_dienstregeling is None:
-            st.error("Error: No Excel file with dienstregeling uploaded. Please upload a file like \"Connexxion data - 2024-2025.xlsx\", containing a sheet named \"Dienstregeling\" and \"Afstandsmatrix\" in the 'Import Data' section.")
+            st.error("Error: No Excel file uploaded with the time table. Please upload a file like \"Connexxion data - 2024-2025.xlsx\", containing a sheet named \"Dienstregeling\" and \"Afstandsmatrix\" in the 'Import Data' section.")
         
         st.markdown("---")
         if not (st.session_state.uploaded_omloopplanning is None) and not (st.session_state.uploaded_dienstregeling is None):
             # haalbaarheid
             rit_haalbaar_binnen_tijd.inladen(pd.read_excel(st.session_state.uploaded_omloopplanning),
                                              pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name="Afstandsmatrix"))
-            st.write("Niet haalbare ritten: ")
-            st.dataframe(rit_haalbaar_binnen_tijd.niet_haalbare_ritten())
+            st.write("Infeasible trips:")
+            df_niet_haalbaar = rit_haalbaar_binnen_tijd.niet_haalbare_ritten()
+            df_niet_haalbaar = DataframeCleaning.omloopplanningEngels(df_niet_haalbaar)
+            df_niet_haalbaar = DataframeCleaning.dienstregelingEngels(df_niet_haalbaar)
+            st.dataframe(df_niet_haalbaar)
             st.markdown("---")
             
             
@@ -97,30 +102,48 @@ def file_upload_section():
             check_1_bus_per_rit.inladen(pd.read_excel(st.session_state.uploaded_omloopplanning), 
                                         pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix"),
                                         pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling"))
-            st.write("Onjuistheden in de invulling van de dienstregeling. \n Dit zijn ritten uit de dienstregelingen die: \n - door geen enkele omloop ingevuld worden; \n - die door meerdere omlopen tegelijk ingevuld worden;")
-            st.dataframe(check_1_bus_per_rit.niet_correcte_ritten())
+            st.write("Inaccuracies in the design of the time table. \n These are trips from the time table that: \n - are not assigned to any bus; \n - are assigned to multiple busses simultaneously.")
+            df_inaccuracies = check_1_bus_per_rit.niet_correcte_ritten()
+            df_inaccuracies = DataframeCleaning.dienstregelingEngels(df_niet_haalbaar)
+            st.dataframe(df_inaccuracies)
             st.markdown("---")
             
             #visualisatie omloopplanning
-            visualisatie, ax_wat_dat_ook_mag_betekenen = VisualisatieOmloopplanning.Visualiatie(pd.read_excel(st.session_state.uploaded_omloopplanning))
+            omloopplanning = pd.read_excel(st.session_state.uploaded_omloopplanning)
+            connexxion_data = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name = 1 )
+            df = AC.voeg_idle_tijden_toe(omloopplanning)
+            df = AC.detecteer_en_verwijder_foute_rijen(df)
+            df = AC.voeg_idle_tijden_toe(df)
+            df = AC.Afstand_omloop_toevoegen(df, connexxion_data)
+            df = AC.add_energy_usage_column(df, soh_value=0.85)
+            df = AC.status(df, 300, 0.90, 0.10)
+            visualisatie, ax_wat_dat_ook_mag_betekenen = VisualisatieOmloopplanning.visualiseer_omloopplanning_met_oplaadmarkering(df)
             st.pyplot(visualisatie)
 
 # Function to run a piece of code when button is clicked, but checks for file first
 def raw_data_section():
-    if st.button('Show/Hide Raw Data'):
-        omloopplanning = pd.read_excel(st.session_state.uploaded_omloopplanning)
-        dienstregeling = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling")
-        afstandsmatrix = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
+    if st.button('Show/Hide Uploaded Files'):
+        fileLoading = "omloopplanning"
+        try: 
+            omloopplanning = DataframeCleaning.omloopplanningEngels(pd.read_excel(st.session_state.uploaded_omloopplanning))
+            # Display the DataFrames
+            st.write("Here is the content of the uploaded bus planning file:")
+            st.dataframe(omloopplanning)
+        except:
+            st.write("Please upload the bus planning file (usually named something like \"omloopplanning.xlsx\").")
         
-        # Display the DataFrames
-        st.write("Here is the content of the uploaded bus planning file:")
-        st.dataframe(omloopplanning)
-        st.write("Here is the content of the uploaded Time table file.")
-        st.write("Time table:")    
-        st.dataframe(dienstregeling)
-        st.write("Afstandsmatrix:")
-        st.dataframe(afstandsmatrix)
-    
+        try: 
+            # Display the DataFrames
+            dienstregeling = DataframeCleaning.dienstregelingEngels(pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling"))
+            afstandsmatrix = DataframeCleaning.afstandsmatrixEngels(pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix"))
+            # Display the DataFrames
+            st.write("Here is the content of the uploaded time table file.")
+            st.write("Time table:")    
+            st.dataframe(dienstregeling)
+            st.write("Distance matrix:")
+            st.dataframe(afstandsmatrix)
+        except:
+            st.write("Please upload the time table file (usually named something like \"Connection data 20##-20## .xlsx\").")    
 
 # Main part of the script
 def main():
@@ -154,7 +177,6 @@ def main():
 # Run the app
 if __name__ == "__main__":
     main()
-
 
 
 

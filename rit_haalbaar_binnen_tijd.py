@@ -93,9 +93,9 @@ def kortst_mogelijke_reistijd_voor_rit(rit:pd.DataFrame)->float:
     return min_reistijd.total_seconds()
 
 def kolommen_toevoegen_haalbaarheid():
-    omloopplanning["geplande reistijd"] = omloopplanning.apply(geplande_reistijd, axis = 1)
-    omloopplanning["kortst mogelijke reistijd"] = omloopplanning.apply(kortst_mogelijke_reistijd_voor_rit, axis = 1)
-    omloopplanning["rit haalbaar binnen de tijd"] = omloopplanning.apply(rit_haalbaar_binnen_de_tijd, axis = 1)
+    omloopplanning["Trip duration as planned"] = omloopplanning.apply(geplande_reistijd, axis = 1)
+    omloopplanning["Shortest possible trip duration"] = omloopplanning.apply(kortst_mogelijke_reistijd_voor_rit, axis = 1)
+    omloopplanning["Trip feasible within time"] = omloopplanning.apply(rit_haalbaar_binnen_de_tijd, axis = 1)
     global haalbaarheid_berekend
     haalbaarheid_berekend = True
     
@@ -104,14 +104,14 @@ def haalbare_ritten():
         data_opschonen()
     if haalbaarheid_berekend == False:
         kolommen_toevoegen_haalbaarheid()
-    return omloopplanning[omloopplanning["rit haalbaar binnen de tijd"]]
+    return omloopplanning[omloopplanning["Trip feasible within time"]]
     
 def niet_haalbare_ritten():
     if data_opgeschoond == False:
         data_opschonen()
     if haalbaarheid_berekend == False:
         kolommen_toevoegen_haalbaarheid()
-    return omloopplanning[~omloopplanning["rit haalbaar binnen de tijd"]]
+    return omloopplanning[~omloopplanning["Trip feasible within time"]]
 
 if __name__ == "__main__":
     initialisatie()
