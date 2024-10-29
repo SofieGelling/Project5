@@ -91,7 +91,9 @@ def file_upload_section():
             rit_haalbaar_binnen_tijd.inladen(pd.read_excel(st.session_state.uploaded_omloopplanning),
                                              pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name="Afstandsmatrix"))
             st.write("Infeasible trips:")
-            df_niet_haalbaar = DataframeCleaning.omloopplanningEngels(rit_haalbaar_binnen_tijd.niet_haalbare_ritten())
+            df_niet_haalbaar = rit_haalbaar_binnen_tijd.niet_haalbare_ritten()
+            df_niet_haalbaar = DataframeCleaning.omloopplanningEngels(df_niet_haalbaar)
+            df_niet_haalbaar = DataframeCleaning.dienstregelingEngels(df_niet_haalbaar)
             st.dataframe(df_niet_haalbaar)
             st.markdown("---")
             
@@ -101,7 +103,8 @@ def file_upload_section():
                                         pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix"),
                                         pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling"))
             st.write("Inaccuracies in the implementation of the bus schedule. \n These are trips from the schedule that: \n - are not assigned to any bus schedule; \n - are assigned to multiple bus schedules simultaneously.")
-            df_inaccuracies = DataframeCleaning.dienstregelingEngels(check_1_bus_per_rit.niet_correcte_ritten())
+            df_inaccuracies = check_1_bus_per_rit.niet_correcte_ritten()
+            df_inaccuracies = DataframeCleaning.dienstregelingEngels(df_niet_haalbaar)
             st.dataframe(df_inaccuracies)
             st.markdown("---")
             

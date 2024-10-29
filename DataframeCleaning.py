@@ -7,7 +7,7 @@ dienstregeling = pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name="D
 def omloopplanningEngels(bus_schedule):
     result = bus_schedule.copy()
     result = result.drop('Unnamed: 0', axis=1) #zodat de index niet dubbel wordt laten zien in de tool
-    result = result.rename(columns={'startlocatie': 'Start Location', 'eindlocatie': 'End Location', 'starttijd': 'Start Time', 'eindtijd': 'End Time', 'activiteit': 'Activity', 'buslijn': 'Bus Line', 'energieverbruik': 'Engergy consumption', 'starttijd datum': 'Start Time Date', 'eindtijd datum': 'End Time Date', 'omloop nummer': 'Bus Number'})
+    result = result.rename(columns={'startlocatie': 'Start Location', 'eindlocatie': 'End Location', 'starttijd': 'Start Time', 'eindtijd': 'End Time', 'activiteit': 'Activity', 'buslijn': 'Bus Line', 'energieverbruik': 'Energy consumption', 'starttijd datum': 'Start Time Date', 'eindtijd datum': 'End Time Date', 'omloop nummer': 'Bus Number'})
     return result
 
 def afstandsmatrixEngels(distance_matrix):
