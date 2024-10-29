@@ -106,20 +106,32 @@ def file_upload_section():
             st.pyplot(visualisatie)
 
 # Function to run a piece of code when button is clicked, but checks for file first
+
+# Function to run a piece of code when button is clicked, but checks for file first
 def raw_data_section():
-    if st.button('Show/Hide Conclusion'):
-        omloopplanning = pd.read_excel(st.session_state.uploaded_omloopplanning)
-        dienstregeling = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling")
-        afstandsmatrix = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
+    if st.button('Show/Hide Raw Data'):
+        fileLoading = "omloopplanning"
+        try: 
+            omloopplanning = pd.read_excel(st.session_state.uploaded_omloopplanning)
+            # Display the DataFrames
+            st.write("Here is the content of the uploaded bus schedule file:")
+            st.dataframe(omloopplanning)
+        except:
+            st.write("Please upload the busschedule first.")
         
-        # Display the DataFrames
-        st.write("Here is the content of the uploaded bus schedule:")
-        st.dataframe(omloopplanning)
-        st.write("Here is the content of the uploaded bus timetable.")
-        st.write("Bus timetable:")    
-        st.dataframe(dienstregeling)
-        st.write("Distance matrix:")
-        st.dataframe(afstandsmatrix)
+        try: 
+            # Display the DataFrames
+            dienstregeling = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling")
+            afstandsmatrix = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
+            # Display the DataFrames
+            st.write("Here is the content of the uploaded bus timetable.")
+            st.write("Bus timetable:")    
+            st.dataframe(dienstregeling)
+            st.write("Distance matrix:")
+            st.dataframe(afstandsmatrix)
+        except:
+            st.write("Please upload the time table file (usually named something like \"Connection data 20##-20## .xlsx\").")
+
     
 
 # Main part of the script
