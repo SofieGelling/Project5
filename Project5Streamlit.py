@@ -1,4 +1,4 @@
-# streamlit run Project5StreamlitLocal.py
+# streamlit run Project5Streamlit.py
 import streamlit as st
 import pandas as pd
 import rit_haalbaar_binnen_tijd
@@ -107,7 +107,7 @@ def file_upload_section():
 
 # Function to run a piece of code when button is clicked, but checks for file first
 def raw_data_section():
-    if st.button('Show/Hide Raw Data'):
+    if st.button('Show/Hide Conclusion'):
         omloopplanning = pd.read_excel(st.session_state.uploaded_omloopplanning)
         dienstregeling = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling")
         afstandsmatrix = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
