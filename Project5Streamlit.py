@@ -5,6 +5,7 @@ import rit_haalbaar_binnen_tijd
 import check_1_bus_per_rit
 import VisualisatieOmloopplanning
 import acuucapaciteit as AC
+import DataframeCleaning
 
 # Inject custom CSS for button styling
 def custom_button_css():
@@ -118,10 +119,10 @@ def file_upload_section():
 
 # Function to run a piece of code when button is clicked, but checks for file first
 def raw_data_section():
-    if st.button('Show/Hide Raw Data'):
+    if st.button('Show/Hide Uploaded Files'):
         fileLoading = "omloopplanning"
         try: 
-            omloopplanning = pd.read_excel(st.session_state.uploaded_omloopplanning)
+            omloopplanning = DataframeCleaning.omloopplanningEngels(pd.read_excel(st.session_state.uploaded_omloopplanning))
             # Display the DataFrames
             st.write("Here is the content of the uploaded bus schedule file:")
             st.dataframe(omloopplanning)
@@ -130,8 +131,8 @@ def raw_data_section():
         
         try: 
             # Display the DataFrames
-            dienstregeling = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling")
-            afstandsmatrix = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
+            dienstregeling = DataframeCleaning.dienstregelingEngels(pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling"))
+            afstandsmatrix = DataframeCleaning.afstandsmatrixEngels(pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix"))
             # Display the DataFrames
             st.write("Here is the content of the uploaded bus timetable.")
             st.write("Bus timetable:")    
