@@ -6,6 +6,7 @@ import check_1_bus_per_rit
 import VisualisatieOmloopplanning
 import acuucapaciteit as AC
 import DataframeCleaning
+import io
 
 # Inject custom CSS for button styling
 def custom_button_css():
@@ -25,43 +26,39 @@ def custom_button_css():
         .stButton > button:hover {
             background-color: #520050; /* Dark purple */
         }
+
+        /* Inner buttons style */
+        .stButton.inner-button > button {
+            color: white;
+            background-color: #9B72AA; /* Light Purple */
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 8px;
+            border: 1px solid #673266;
+        }
+
+        .stButton.inner-button > button:hover {
+            background-color: #825193; /* Darker light purple */
+        }
         </style>
     """, unsafe_allow_html=True)
 
-# Initialize the state for toggling product info, additional info, and file uploader
+# Initialize session states for toggling sections
 def initialize_states():
-    if 'show_info' not in st.session_state:
-        st.session_state.show_info = False
-    if 'show_results' not in st.session_state:
-        st.session_state.show_results = False
-    if 'show_uploader' not in st.session_state:
-        st.session_state.show_uploader = False
-    if 'uploaded_file' not in st.session_state:
-        st.session_state.uploaded_file = None
+    if 'show_infeasible_trips' not in st.session_state:
+        st.session_state.show_infeasible_trips = False
+    if 'show_inaccuracies' not in st.session_state:
+        st.session_state.show_inaccuracies = False
+    if 'show_battery_status' not in st.session_state:
+        st.session_state.show_battery_status = False
+    if 'show_visualization' not in st.session_state:
+        st.session_state.show_visualization = False
+    if 'show_dataframe' not in st.session_state:
+        st.session_state.show_dataframe = False
     if 'uploaded_omloopplanning' not in st.session_state:
         st.session_state.uploaded_omloopplanning = None
     if 'uploaded_dienstregeling' not in st.session_state:
         st.session_state.uploaded_dienstregeling = None
-
-# Function for software tool information section
-def software_tool_information():
-    st.header("Software tool Information")
-    if st.button('Show/Hide Info'):
-        st.session_state.show_info = not st.session_state.show_info
-
-    # Conditionally display or hide the information
-    if st.session_state.show_info:
-        st.info("**Software tool information**\n- Description\n- Usage\n- Data type\n- Output")
-
-# Function for results section
-def results():
-    st.header("Results")
-    if st.button('Show/Hide Results'):
-        st.session_state.show_results = not st.session_state.show_results
-
-    # Conditionally display or hide results
-    if st.session_state.show_results:
-        st.info("**Planning**\n\n ...")
 
 # Function for uploading Excel files
 def file_upload_section():
@@ -69,115 +66,111 @@ def file_upload_section():
     omloopplanning_file = st.file_uploader("Choose the Excel file with the filled in **bus planning** (usually named something like \"omloopplanning.xlsx\")", type="xlsx")
     dienstregeling_file = st.file_uploader("Choose the Excel file with the **time table** (usually named something like \"Connection data 20##-20## .xlsx\")", type="xlsx")
     
-    # Check if a file has been uploaded
+    # Save files to session state
     if omloopplanning_file is not None:
-        st.session_state.uploaded_omloopplanning = omloopplanning_file  # Save the file to session state
-
-    # Check if a file has been uploaded
+        st.session_state.uploaded_omloopplanning = omloopplanning_file
     if dienstregeling_file is not None:
-        st.session_state.uploaded_dienstregeling = dienstregeling_file  # Save the file to session state
+        st.session_state.uploaded_dienstregeling = dienstregeling_file
 
-    if dienstregeling_file is not None and omloopplanning_file is not None:
-        
-        if st.session_state.uploaded_omloopplanning is None:
-            st.error("Error: No Excel file uploaded with the filled in bus planning. Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
-        
-        if st.session_state.uploaded_dienstregeling is None:
-            st.error("Error: No Excel file uploaded with the time table. Please upload a file like \"Connexxion data - 2024-2025.xlsx\", containing a sheet named \"Dienstregeling\" and \"Afstandsmatrix\" in the 'Import Data' section.")
-        
+    # Display error messages if files are missing
+    if dienstregeling_file is None:
+        st.error("Error: No Excel file uploaded with the time table. Please upload a file like \"Connexxion data - 2024-2025.xlsx\", containing a sheet named \"Dienstregeling\" and \"Afstandsmatrix\" in the 'Import Data' section.")
+    if omloopplanning_file is None:
+        st.error("Error: No Excel file uploaded with the filled in bus planning. Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
+
+# Display Infeasible Trips section
+def display_infeasible_trips():
+    if st.button("Show/Hide: Infeasible Trips"):
+        st.session_state.show_infeasible_trips = not st.session_state.show_infeasible_trips
+
+    if st.session_state.show_infeasible_trips:
+        rit_haalbaar_binnen_tijd.inladen(
+            pd.read_excel(st.session_state.uploaded_omloopplanning),
+            pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
+        )
+        st.write("Infeasible trips:")
+        df_niet_haalbaar = rit_haalbaar_binnen_tijd.niet_haalbare_ritten()
+        df_niet_haalbaar = DataframeCleaning.omloopplanningEngels(df_niet_haalbaar)
+        df_niet_haalbaar = DataframeCleaning.dienstregelingEngels(df_niet_haalbaar)
+        st.dataframe(df_niet_haalbaar)
         st.markdown("---")
-        if not (st.session_state.uploaded_omloopplanning is None) and not (st.session_state.uploaded_dienstregeling is None):
-            # haalbaarheid
-            rit_haalbaar_binnen_tijd.inladen(pd.read_excel(st.session_state.uploaded_omloopplanning),
-                                             pd.read_excel("Connexxion data - 2024-2025.xlsx", sheet_name="Afstandsmatrix"))
-            st.write("Infeasible trips:")
-            df_niet_haalbaar = rit_haalbaar_binnen_tijd.niet_haalbare_ritten()
-            df_niet_haalbaar = DataframeCleaning.omloopplanningEngels(df_niet_haalbaar)
-            df_niet_haalbaar = DataframeCleaning.dienstregelingEngels(df_niet_haalbaar)
-            st.dataframe(df_niet_haalbaar)
-            st.markdown("---")
-            
-            
-            # dienstregeling juist ingevuld
-            check_1_bus_per_rit.inladen(pd.read_excel(st.session_state.uploaded_omloopplanning), 
-                                        pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix"),
-                                        pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling"))
-            st.write("Inaccuracies in the design of the time table. \n These are trips from the time table that: \n - are not assigned to any bus; \n - are assigned to multiple busses simultaneously.")
-            df_inaccuracies = check_1_bus_per_rit.niet_correcte_ritten()
-            df_inaccuracies = DataframeCleaning.dienstregelingEngels(df_niet_haalbaar)
-            st.dataframe(df_inaccuracies)
-            st.markdown("---")
-            
-            #visualisatie omloopplanning
-            omloopplanning = pd.read_excel(st.session_state.uploaded_omloopplanning)
-            connexxion_data = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name = 1 )
-            df = AC.voeg_idle_tijden_toe(omloopplanning)
-            df = AC.detecteer_en_verwijder_foute_rijen(df)
-            df = AC.voeg_idle_tijden_toe(df)
-            df = AC.Afstand_omloop_toevoegen(df, connexxion_data)
-            df = AC.add_energy_usage_column(df, soh_value=0.85)
-            df = AC.status(df, 300, 0.90, 0.10)
-            visualisatie, ax_wat_dat_ook_mag_betekenen = VisualisatieOmloopplanning.visualiseer_omloopplanning_met_oplaadmarkering(df)
+
+# Display Inaccuracies in Timetable section
+def display_inaccuracies_in_timetable():
+    if st.button("Show/Hide: Inaccuracies in Timetable"):
+        st.session_state.show_inaccuracies = not st.session_state.show_inaccuracies
+
+    if st.session_state.show_inaccuracies:
+        check_1_bus_per_rit.inladen(
+            pd.read_excel(st.session_state.uploaded_omloopplanning),
+            pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix"),
+            pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling")
+        )
+        st.write("Inaccuracies in the design of the timetable:")
+        st.write("These are trips from the timetable that: \n - are not assigned to any bus; \n - are assigned to multiple buses simultaneously.")
+        df_inaccuracies = check_1_bus_per_rit.niet_correcte_ritten()
+        df_inaccuracies = DataframeCleaning.dienstregelingEngels(df_inaccuracies)
+        st.dataframe(df_inaccuracies)
+        st.markdown("---")
+
+# Display Battery Status Visualization and DataFrame controls
+def display_battery_status():
+    if st.button("Show/Hide: Battery Status"):
+        st.session_state.show_battery_status = not st.session_state.show_battery_status
+
+    if st.session_state.show_battery_status:
+        selected_columns = [
+            "Index", "startlocatie", "eindlocatie", "starttijd", "eindtijd", 
+            "activiteit", "buslijn", "omloop nummer", "afstand in meters", 
+            "energieverbruik nieuw", "Huidige energie", "Status"
+        ]
+
+        omloopplanning = pd.read_excel(st.session_state.uploaded_omloopplanning)
+        connexxion_data = pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
+        df = AC.voeg_idle_tijden_toe(omloopplanning)
+        df = AC.detecteer_en_verwijder_foute_rijen(df)
+        df = AC.Afstand_omloop_toevoegen(df, connexxion_data)
+        df = AC.add_energy_usage_column(df, soh_value=0.85)
+        df = AC.status(df, 300, 0.90, 0.10)
+
+        # Inner "Show/Hide Visualization" button
+        if st.button("Show/Hide: Visualization", key="visualization_toggle", help="Toggle to show/hide the Gantt chart visualization", type="primary"):
+            st.session_state.show_visualization = not st.session_state.show_visualization
+        if st.session_state.show_visualization:
+            visualisatie, _ = VisualisatieOmloopplanning.visualiseer_omloopplanning_met_oplaadmarkering(df)
             st.pyplot(visualisatie)
 
-# Function to run a piece of code when button is clicked, but checks for file first
-def raw_data_section():
-    if st.button('Show/Hide Uploaded Files'):
-        fileLoading = "omloopplanning"
-        try: 
-            omloopplanning = DataframeCleaning.omloopplanningEngels(pd.read_excel(st.session_state.uploaded_omloopplanning))
-            # Display the DataFrames
-            st.write("Here is the content of the uploaded bus planning file:")
-            st.dataframe(omloopplanning)
-        except:
-            st.write("Please upload the bus planning file (usually named something like \"omloopplanning.xlsx\").")
-        
-        try: 
-            # Display the DataFrames
-            dienstregeling = DataframeCleaning.dienstregelingEngels(pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling"))
-            afstandsmatrix = DataframeCleaning.afstandsmatrixEngels(pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix"))
-            # Display the DataFrames
-            st.write("Here is the content of the uploaded time table file.")
-            st.write("Time table:")    
-            st.dataframe(dienstregeling)
-            st.write("Distance matrix:")
-            st.dataframe(afstandsmatrix)
-        except:
-            st.write("Please upload the time table file (usually named something like \"Connection data 20##-20## .xlsx\").")    
+        # Inner "Show/Hide DataFrame" button
+        if st.button("Show/Hide: DataFrame", key="dataframe_toggle", help="Toggle to show/hide the DataFrame", type="primary"):
+            st.session_state.show_dataframe = not st.session_state.show_dataframe
+        if st.session_state.show_dataframe:
+            st.dataframe(df[selected_columns])
 
-# Main part of the script
+        # Button to download DataFrame as Excel
+        buffer = io.BytesIO()
+        df[selected_columns].to_excel(buffer, index=False)
+        st.download_button(
+            label="Download DataFrame as Excel",
+            data=buffer,
+            file_name="battery_status_data.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key="download_button",
+            help="Download the DataFrame as an Excel file",
+            type="primary"
+        )
+
+# Main function
 def main():
-    # Activate custom button
-    custom_button_css()
+    custom_button_css()  # Activate custom button styles
+    initialize_states()  # Initialize session states
+    file_upload_section()  # File upload section
 
-    # Initialize states
-    initialize_states()
-
-    # File upload section
-    file_upload_section()
-
-    # Add a separator between the sections
-    st.markdown("---")
-
-    raw_data_section()
-
-
-    # # Product info section
-    # software_tool_information()
-    #
-    # # Add a separator between the sections
-    # st.markdown("---")
-
-    # # Add a separator between the sections
-    # st.markdown("---")
-
-    # # Additional info section
-    # results()
+    # Only display buttons if both files are uploaded
+    if st.session_state.uploaded_omloopplanning and st.session_state.uploaded_dienstregeling:
+        display_infeasible_trips()  # Show infeasible trips section
+        display_inaccuracies_in_timetable()  # Show timetable inaccuracies section
+        display_battery_status()  # Show battery status visualization and DataFrame controls
 
 # Run the app
 if __name__ == "__main__":
     main()
-
-
-
-
