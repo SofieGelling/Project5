@@ -116,8 +116,8 @@ def display_battery_status():
     # Main Battery Status button
     if st.button("Check: Battery Status"):
         st.session_state.show_battery_status = not st.session_state.show_battery_status
-
     if st.session_state.show_battery_status:
+        st.write("The provided schedule has been adjusted; some idle trips have been removed, and some idle trips have been added.")
         selected_columns = [
             "Index", "startlocatie", "eindlocatie", "starttijd", "eindtijd", 
             "activiteit", "buslijn", "omloop nummer", "afstand in meters", 
@@ -136,10 +136,10 @@ def display_battery_status():
         st.markdown('<div class="stButton inner-button">', unsafe_allow_html=True)
         if st.button("Visualization", key="visualization_toggle", help="Click to show/hide the Gantt chart visualization"):
             st.session_state.show_visualization = not st.session_state.show_visualization
-            st.write("This visualization shows the trips that are not feasible (marked in red) because they fall below the minimum battery percentage.")
         st.markdown("</div>", unsafe_allow_html=True)
 
         if st.session_state.show_visualization:
+            st.write("This visualization shows the trips that are not feasible (marked in red) because they fall below the minimum battery percentage.")
             visualisatie, _ = VisualisatieOmloopplanning.visualiseer_omloopplanning_met_oplaadmarkering(df)
             st.pyplot(visualisatie)
 
@@ -147,10 +147,10 @@ def display_battery_status():
         st.markdown('<div class="stButton inner-button">', unsafe_allow_html=True)
         if st.button("DataFrame with Battery Status", key="dataframe_toggle", help="Click to show/hide the DataFrame"):
             st.session_state.show_dataframe = not st.session_state.show_dataframe
-            st.write("Adjusted DataFrame: \n - Afstand in meters: shows the distance of the trip \n - energieverbruik nieuw: shows the new calculated energy usage for the trip \n - Huidige energie: shows the current energy of the bus \n - Status: shows if the bus is above (OK) or below (Opladen Nodig) the minimum battery percentage")
         st.markdown("</div>", unsafe_allow_html=True)
 
         if st.session_state.show_dataframe:
+            st.write("Adjusted DataFrame: \n - Afstand in meters: shows the distance of the trip \n - energieverbruik nieuw: shows the new calculated energy usage for the trip \n - Huidige energie: shows the current energy of the bus \n - Status: shows if the bus is above (OK) or below (Opladen Nodig) the minimum battery percentage")
             st.dataframe(df[selected_columns])
 
         # Button to download DataFrame as Excel
@@ -166,6 +166,41 @@ def display_battery_status():
             help="Download the DataFrame as an Excel file",
         )
 
+# Function to display uploaded files with toggling functionality
+def raw_data_section():
+    # Initialize the toggle state in session state if it doesn't exist
+    if 'show_uploaded_files' not in st.session_state:
+        st.session_state.show_uploaded_files = False
+
+    # Toggle button for displaying uploaded files
+    if st.button('Show/Hide Uploaded Files'):
+        st.session_state.show_uploaded_files = not st.session_state.show_uploaded_files
+
+    # Only display content if the toggle is on
+    if st.session_state.show_uploaded_files:
+        try: 
+            # Load and display the bus planning file (omloopplanning)
+            omloopplanning = DataframeCleaning.omloopplanningEngels(pd.read_excel(st.session_state.uploaded_omloopplanning))
+            st.write("Here is the content of the uploaded bus planning file:")
+            st.dataframe(omloopplanning)
+        except:
+            st.write("Please upload the bus planning file (usually named something like \"omloopplanning.xlsx\").")
+
+        try: 
+            # Load and display the time table (dienstregeling) and distance matrix (afstandsmatrix)
+            dienstregeling = DataframeCleaning.dienstregelingEngels(pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling"))
+            afstandsmatrix = DataframeCleaning.afstandsmatrixEngels(pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix"))
+
+            st.write("Here is the content of the uploaded time table file.")
+            st.write("Time table:")
+            st.dataframe(dienstregeling)
+            st.write("Distance matrix:")
+            st.dataframe(afstandsmatrix)
+        except:
+            st.write("Please upload the time table file (usually named something like \"Connection data 20##-20## .xlsx\").")
+
+
+
 
 # Main function
 def main():
@@ -175,6 +210,9 @@ def main():
 
     # Only display buttons if both files are uploaded
     if st.session_state.uploaded_omloopplanning and st.session_state.uploaded_dienstregeling:
+        st.markdown("---")
+        raw_data_section() # Show uploaded files
+        st.markdown("---")
         display_infeasible_trips()  # Show infeasible trips section
         display_inaccuracies_in_timetable()  # Show timetable inaccuracies section
         display_battery_status()  # Show battery status visualization and DataFrame controls
