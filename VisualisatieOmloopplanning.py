@@ -2,6 +2,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.patches import Patch
+import plotly.express as px
+import plotly.graph_objects as go
+import mplcursors
 
 # Pad naar het Excel-bestand
 file_path = 'omloopplanning.xlsx'
@@ -150,6 +153,7 @@ def Visualiatie_met_busnummers(file_path):
     plt.show()
     return fig, ax
 
+
 def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
     """
     Visualiseert de omloopplanning met markeringen voor opladen waar nodig.
@@ -170,13 +174,13 @@ def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
 
     # Kleurmapping voor de verschillende activiteiten
     color_map = {
-        ('dienst rit', 'ehvapt', 'ehvbst'): '#4682B4',    # dienst rit heenrit (darker blue)
-        ('dienst rit', 'ehvbst', 'ehvapt'): '#6495ED',    # dienst rit terugrit (lighter blue)
-        ('materiaal rit', 'ehvapt', 'ehvbst'): '#FF8C00', # materiaal rit eindigt bij ehvbst (donkerder geel)
-        ('materiaal rit', 'ehvbst', 'ehvapt'): '#FFD700', # materiaal rit eindigt bij ehvapt (lichter geel)
-        'idle': 'lightgrey',                              # idle (light grey)
-        'opladen': '#00EE00',                             # opladen (green)
-        'unmapped': '#C1FFC1'                             # materiaalrit naar oplaadpunt (light green)
+        ('dienst rit', 'ehvapt', 'ehvbst'): ('#4682B4', 0.8),    # dienst rit heenrit (darker blue)
+        ('dienst rit', 'ehvbst', 'ehvapt'): ('#6495ED', 0.8),    # dienst rit terugrit (lighter blue)
+        ('materiaal rit', 'ehvapt', 'ehvbst'): ('#FFA500', 0.9), # materiaal rit eindigt bij ehvbst (darker yellow)
+        ('materiaal rit', 'ehvbst', 'ehvapt'): ('#FFC107', 0.7), # materiaal rit eindigt bij ehvapt (lighter yellow)
+        'idle': 'lightgrey',                                     # idle (light grey)
+        'opladen': '#00EE00',                                    # opladen (green)
+        'unmapped': '#C1FFC1'                                    # materiaalrit naar oplaadpunt (light green)
     }
 
     # Begin met plotten
@@ -184,12 +188,16 @@ def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
     y_labels = []
     y_pos = 0  # Verticale positie voor elke unieke omloop
 
+    # Lijst om het bereik en laagste energieverbruik bij te houden voor opladen-ranges
+    opladen_ranges = []
+
     # Voor elke unieke omloop plotten we de activiteiten
     for run in df['omloop nummer'].unique():
         run_data = df[df['omloop nummer'] == run]
         y_labels.append(f'Run {int(run)}')
         in_sequence = False  # Om te controleren of we in een reeks "Opladen nodig" ritten zitten
         start_x, end_x = None, None  # Start- en eindtijden van de reeks "Opladen nodig" ritten
+        start_index, end_index = None, None  # Start- en eindindex van de reeks "Opladen nodig" ritten
         
         for i, row in run_data.iterrows():
             # Kies kleur op basis van activiteit en route, gebruik 'unmapped' als fallback
@@ -202,17 +210,21 @@ def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
             # Controleer of de rit de status 'Opladen nodig' heeft
             if row['Status'] == 'Opladen nodig':
                 # Voeg een doorzichtige rode overlay toe voor ritten waar opladen nodig is
-                ax.barh(y_pos, row['eindtijd datum'] - row['starttijd datum'], left=row['starttijd datum'], 
-                        color='darkred', alpha=0.5)
-                
-                # Begin of verleng de reeks "Opladen nodig" ritten
                 if not in_sequence:
-                    start_x = row['starttijd datum']  # Begin van de reeks
+                    # Start een nieuw rood gebied
+                    start_x = row['starttijd datum']
+                    start_index = i
                     in_sequence = True
                 end_x = row['eindtijd datum']  # Update eindtijd voor de huidige reeks
+                end_index = i  # Update eindindex voor de huidige reeks
             else:
                 # Sluit een reeks "Opladen nodig" ritten af en teken de rand
                 if in_sequence:
+                    # Sla het volledige rode gebied op als één object
+                    red_patch = ax.barh(y_pos, end_x - start_x, left=start_x, color='darkred', alpha=0.5)
+                    opladen_ranges.append((red_patch[0], start_index, end_index))
+                    
+                    # Teken de rand om het rode gebied
                     ax.plot([start_x, end_x], [y_pos + 0.4, y_pos + 0.4], color='red', linewidth=2)  # Bovenlijn
                     ax.plot([start_x, end_x], [y_pos - 0.4, y_pos - 0.4], color='red', linewidth=2)  # Onderlijn
                     ax.plot([start_x, start_x], [y_pos - 0.4, y_pos + 0.4], color='red', linewidth=2)  # Linkerlijn
@@ -221,6 +233,10 @@ def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
             
         # Als een reeks nog niet afgesloten is aan het einde van de omloop, sluit deze af
         if in_sequence:
+            red_patch = ax.barh(y_pos, end_x - start_x, left=start_x, color='darkred', alpha=0.5)
+            opladen_ranges.append((red_patch[0], start_index, end_index))
+            
+            # Teken de rand om het rode gebied
             ax.plot([start_x, end_x], [y_pos + 0.4, y_pos + 0.4], color='red', linewidth=2)  # Bovenlijn
             ax.plot([start_x, end_x], [y_pos - 0.4, y_pos - 0.4], color='red', linewidth=2)  # Onderlijn
             ax.plot([start_x, start_x], [y_pos - 0.4, y_pos + 0.4], color='red', linewidth=2)  # Linkerlijn
@@ -235,6 +251,12 @@ def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
     ax.set_xlabel("Time")
     ax.set_ylabel("Busses")
 
+    # Stel de limieten van de x-as in om de volledige periode te tonen
+    ax.set_xlim([
+        df['starttijd datum'].min() - pd.Timedelta(hours=0.5),
+        df['eindtijd datum'].max() + pd.Timedelta(hours=0.5)
+    ])
+
     # Legenda voor de kleuren
     legend_elements = [
         Patch(facecolor='#4682B4', label='regular trip -> ehvbst (outbound)'),
@@ -244,7 +266,7 @@ def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
         Patch(facecolor='lightgrey', label='idle'),
         Patch(facecolor='#00EE00', label='charging'),
         Patch(facecolor='#C1FFC1', label='deadhead trip to garage'),
-        Patch(facecolor='red', label='charging needed (marked)', alpha=0.3)
+        Patch(facecolor='none', edgecolor='red', label='charging needed (marked)', linewidth=2)
     ]
     ax.legend(handles=legend_elements, loc='upper right')
 
@@ -255,8 +277,27 @@ def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
     # Laat de titel en rasterinstellingen zien
     plt.title("Bus Planning Gantt Chart")
     plt.grid(axis='x', linestyle='--', alpha=0.5)
-    plt.tight_layout()
-    plt.show()
-    
-    return fig, ax
+    plt.tight_layout()  # Optimaliseert de ruimte-indeling
 
+    # Voeg de cursor alleen toe aan de rode gebieden
+    cursor = mplcursors.cursor([p[0] for p in opladen_ranges], hover=True)
+
+    # Pas de annotatie aan om het begin en eind van het rode gebied en het laagste punt te tonen
+    @cursor.connect("add")
+    def on_add(sel):
+        # Zoek het rode gebied waarover wordt gehovert
+        for patch, start_index, end_index, lowest_point in opladen_ranges:
+            if sel.artist == patch:
+                # Haal de waarde van 'huidige energie' op voor de laatste index van het rode gebied
+                laatste_energie = df.loc[end_index, 'huidige energie']
+                
+                # Stel de annotatietekst in
+                sel.annotation.set(
+                    text=f"Activiteit index: {start_index} - {end_index}\n"
+                        f"lowest point: {laatste_energie:.2f}"
+                )
+                break
+
+
+    plt.show()
+    return fig, ax
