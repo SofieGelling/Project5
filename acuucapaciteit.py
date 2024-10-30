@@ -201,8 +201,13 @@ def add_energy_usage_column(df, soh_value=0.85):
             return -energy_added_kWh
         else:
             return (0.7 + 2.5) / 2 * distance_km
-
+        
+    # Voeg de energieverbruik kolom toe
     df['energieverbruik nieuw'] = df.apply(calculate_energy_usage, axis=1)
+
+    # Voeg de Index kolom toe aan het begin en verwijder een eventuele 'Unnamed: 0' kolom
+    df.insert(0, 'Index', range(1, len(df) + 1))
+    df.drop(columns=['Unnamed: 0'], inplace=True, errors='ignore')
     return df
 
 def tel_ritten_per_type(df):
@@ -265,8 +270,9 @@ def main():
     df = Afstand_omloop_toevoegen(df, connexxion_data)
     df = add_energy_usage_column(df, soh_value=0.85)
     df = status(df, 300, 0.90, 0.10)
-    # df.to_excel("nieuwe_data.xlsx", index=False)
+    df.to_excel("nieuwe_data.xlsx", index=False)
     check_oplaadtijd(df)
-    # VO.visualiseer_omloopplanning_met_oplaadmarkering(df)
+    print(df.columns)
+    VO.visualiseer_omloopplanning_met_oplaadmarkering(df)
 
 main()
