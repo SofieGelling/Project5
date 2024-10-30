@@ -116,8 +116,13 @@ def display_battery_status():
     # Main Battery Status button
     if st.button("Check: Battery Status"):
         st.session_state.show_battery_status = not st.session_state.show_battery_status
+
     if st.session_state.show_battery_status:
         st.write("The provided schedule has been adjusted; some idle trips have been removed, and some idle trips have been added.")
+        
+        # User input for soh_value
+        soh_value = st.number_input("Enter the State of Health (SoH) value for battery calculation:", min_value=0.0, max_value=1.0, value=0.85, step=0.01)
+        
         selected_columns = [
             "Index", "startlocatie", "eindlocatie", "starttijd", "eindtijd", 
             "activiteit", "buslijn", "omloop nummer", "afstand in meters", 
@@ -129,7 +134,7 @@ def display_battery_status():
         df = AC.voeg_idle_tijden_toe(omloopplanning)
         df = AC.detecteer_en_verwijder_foute_rijen(df)
         df = AC.Afstand_omloop_toevoegen(df, connexxion_data)
-        df = AC.add_energy_usage_column(df, soh_value=0.85)
+        df = AC.add_energy_usage_column(df, soh_value=soh_value)
         df = AC.status(df, 300, 0.90, 0.10)
 
         # Inner "Show/Hide Visualization" button with lighter purple style
@@ -165,6 +170,7 @@ def display_battery_status():
             key="download_button",
             help="Download the DataFrame as an Excel file",
         )
+
 
 # Function to display uploaded files with toggling functionality
 def raw_data_section():
