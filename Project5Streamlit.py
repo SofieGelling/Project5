@@ -12,7 +12,7 @@ import io
 def custom_button_css():
     st.markdown("""
         <style>
-        /* General button style */
+        /* General button style for primary outer buttons */
         .stButton > button {
             color: white;
             background-color: #673266; /* Purple */
@@ -21,27 +21,24 @@ def custom_button_css():
             border-radius: 8px;
             border: 2px solid #E6007E; /* Pinkish border */
         }
-
-        /* Hover effect - should change to a darker purple */
         .stButton > button:hover {
             background-color: #520050; /* Dark purple */
         }
-
-        /* Inner buttons style */
-        .stButton.inner-button > button {
+        /* Inner button style for lighter pink */
+        .stButton.light-pink > button {
             color: white;
-            background-color: #9B72AA; /* Light Purple */
+            background-color: #E8A2C8; /* Light Pink */
             padding: 8px 16px;
             font-size: 14px;
             border-radius: 8px;
-            border: 1px solid #673266;
+            border: 1px solid #D081A1;
         }
-
-        .stButton.inner-button > button:hover {
-            background-color: #825193; /* Darker light purple */
+        .stButton.light-pink > button:hover {
+            background-color: #D081A1; /* Darker pink */
         }
         </style>
     """, unsafe_allow_html=True)
+
 
 # Initialize session states for toggling sections
 def initialize_states():
@@ -80,7 +77,7 @@ def file_upload_section():
 
 # Display Infeasible Trips section
 def display_infeasible_trips():
-    if st.button("Show/Hide: Infeasible Trips"):
+    if st.button("Check: Infeasible Trips"):
         st.session_state.show_infeasible_trips = not st.session_state.show_infeasible_trips
 
     if st.session_state.show_infeasible_trips:
@@ -93,11 +90,12 @@ def display_infeasible_trips():
         df_niet_haalbaar = DataframeCleaning.omloopplanningEngels(df_niet_haalbaar)
         df_niet_haalbaar = DataframeCleaning.dienstregelingEngels(df_niet_haalbaar)
         st.dataframe(df_niet_haalbaar)
+        st.write("This section displays the trips that are infeasible in the schedule. \nIf nothing is shown here, all trips are feasible.")
         st.markdown("---")
 
 # Display Inaccuracies in Timetable section
 def display_inaccuracies_in_timetable():
-    if st.button("Show/Hide: Inaccuracies in Timetable"):
+    if st.button("Check: Inaccuracies in Timetable"):
         st.session_state.show_inaccuracies = not st.session_state.show_inaccuracies
 
     if st.session_state.show_inaccuracies:
@@ -107,15 +105,16 @@ def display_inaccuracies_in_timetable():
             pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling")
         )
         st.write("Inaccuracies in the design of the timetable:")
-        st.write("These are trips from the timetable that: \n - are not assigned to any bus; \n - are assigned to multiple buses simultaneously.")
         df_inaccuracies = check_1_bus_per_rit.niet_correcte_ritten()
         df_inaccuracies = DataframeCleaning.dienstregelingEngels(df_inaccuracies)
         st.dataframe(df_inaccuracies)
+        st.write("These are trips from the timetable that: \n - are not assigned to any bus; \n - are assigned to multiple buses simultaneously.")
         st.markdown("---")
 
 # Display Battery Status Visualization and DataFrame controls
 def display_battery_status():
-    if st.button("Show/Hide: Battery Status"):
+    # Main Battery Status button
+    if st.button("Check: Battery Status"):
         st.session_state.show_battery_status = not st.session_state.show_battery_status
 
     if st.session_state.show_battery_status:
@@ -133,20 +132,29 @@ def display_battery_status():
         df = AC.add_energy_usage_column(df, soh_value=0.85)
         df = AC.status(df, 300, 0.90, 0.10)
 
-        # Inner "Show/Hide Visualization" button
-        if st.button("Show/Hide: Visualization", key="visualization_toggle", help="Toggle to show/hide the Gantt chart visualization", type="primary"):
+        # Inner "Show/Hide Visualization" button with lighter purple style
+        st.markdown('<div class="stButton inner-button">', unsafe_allow_html=True)
+        if st.button("Visualization", key="visualization_toggle", help="Click to show/hide the Gantt chart visualization"):
             st.session_state.show_visualization = not st.session_state.show_visualization
+            st.write("This visualization shows the trips that are not feasible (marked in red) because they fall below the minimum battery percentage.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
         if st.session_state.show_visualization:
             visualisatie, _ = VisualisatieOmloopplanning.visualiseer_omloopplanning_met_oplaadmarkering(df)
             st.pyplot(visualisatie)
 
-        # Inner "Show/Hide DataFrame" button
-        if st.button("Show/Hide: DataFrame", key="dataframe_toggle", help="Toggle to show/hide the DataFrame", type="primary"):
+        # Inner "Show/Hide DataFrame" button with lighter purple style
+        st.markdown('<div class="stButton inner-button">', unsafe_allow_html=True)
+        if st.button("DataFrame with Battery Status", key="dataframe_toggle", help="Click to show/hide the DataFrame"):
             st.session_state.show_dataframe = not st.session_state.show_dataframe
+            st.write("Adjusted DataFrame: \n - Afstand in meters: shows the distance of the trip \n - energieverbruik nieuw: shows the new calculated energy usage for the trip \n - Huidige energie: shows the current energy of the bus \n - Status: shows if the bus is above (OK) or below (Opladen Nodig) the minimum battery percentage")
+        st.markdown("</div>", unsafe_allow_html=True)
+
         if st.session_state.show_dataframe:
             st.dataframe(df[selected_columns])
 
         # Button to download DataFrame as Excel
+        st.markdown('<div class="stButton inner-button">', unsafe_allow_html=True)
         buffer = io.BytesIO()
         df[selected_columns].to_excel(buffer, index=False)
         st.download_button(
@@ -156,8 +164,8 @@ def display_battery_status():
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             key="download_button",
             help="Download the DataFrame as an Excel file",
-            type="primary"
         )
+
 
 # Main function
 def main():
