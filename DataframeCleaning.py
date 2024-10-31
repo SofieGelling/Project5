@@ -12,7 +12,7 @@ def omloopplanningEngels(bus_schedule):
 
 def omloopplanning_vertalen(bus_schedule):
     result = bus_schedule.copy()
-    result = result.rename(columns={'startlocatie': 'Start Location', 'eindlocatie': 'End Location', 'starttijd': 'Start Time', 'eindtijd': 'End Time', 'activiteit': 'Activity', 'buslijn': 'Bus Line', 'energieverbruik': 'Energy consumption', 'starttijd datum': 'Start Time Date', 'eindtijd datum': 'End Time Date', 'omloop nummer': 'Bus Number', 'afstand in meters': 'Disctance in meters', 'Huidige energie': 'Current energy', 'energieverbruik nieuw': 'Energy consumption'})
+    result = result.rename(columns={'startlocatie': 'Start Location', 'eindlocatie': 'End Location', 'starttijd': 'Start Time', 'eindtijd': 'End Time', 'activiteit': 'Activity', 'buslijn': 'Bus Line', 'energieverbruik': 'Energy consumption', 'starttijd datum': 'Start Time Date', 'eindtijd datum': 'End Time Date', 'omloop nummer': 'Bus Number', 'afstand in meters': 'Disctance in meters', 'Huidige energie': 'Current energy', 'energieverbruik nieuw': 'Energy consumption new'})
     return result
 
 def afstandsmatrixEngels(distance_matrix):
