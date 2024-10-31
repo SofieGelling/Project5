@@ -136,7 +136,7 @@ def display_battery_status():
         df = AC.Afstand_omloop_toevoegen(df, connexxion_data)
         df = AC.add_energy_usage_column(df, soh_value=soh_value)
         df = AC.status(df, 300, soh_value)
-        df = df[selected_columns]
+        df_vertaald = df[selected_columns]
         df_vertaald = DataframeCleaning.omloopplanning_vertalen(df)
 
         # Inner "Show/Hide Visualization" button with lighter purple style
