@@ -4,7 +4,7 @@ import matplotlib.dates as mdates
 from matplotlib.patches import Patch
 import plotly.express as px
 import plotly.graph_objects as go
-import mplcursors
+#import mplcursors
 
 # Pad naar het Excel-bestand
 file_path = 'omloopplanning.xlsx'
@@ -153,7 +153,6 @@ def Visualiatie_met_busnummers(file_path):
     plt.show()
     return fig, ax
 
-
 def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
     """
     Visualiseert de omloopplanning met markeringen voor opladen waar nodig.
@@ -279,6 +278,8 @@ def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
     plt.grid(axis='x', linestyle='--', alpha=0.5)
     plt.tight_layout()  # Optimaliseert de ruimte-indeling
 
+    """
+    # Pas de annotatie aan om het begin en eind van het rode gebied en het laagste punt te tonen
     # Voeg de cursor alleen toe aan de rode gebieden
     cursor = mplcursors.cursor([p[0] for p in opladen_ranges], hover=True)
 
@@ -288,16 +289,17 @@ def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
         # Zoek het rode gebied waarover wordt gehovert
         for patch, start_index, end_index, lowest_point in opladen_ranges:
             if sel.artist == patch:
-                # Haal de waarde van 'huidige energie' op voor de laatste index van het rode gebied
-                laatste_energie = df.loc[end_index, 'huidige energie']
+                # Gebruik de waarden uit de 'Index' kolom voor de annotatie
+                start_val = start_index  # Omdat de 'Index' al als index is ingesteld
+                end_val = end_index
                 
-                # Stel de annotatietekst in
+                # Stel de annotatietekst in met de 'Index'-waarden en de laagste waarde van 'Huidige energie'
                 sel.annotation.set(
-                    text=f"Activiteit index: {start_index} - {end_index}\n"
-                        f"lowest point: {laatste_energie:.2f}"
+                    text=f"Activity index: {start_val} - {end_val}\n"
+                         f"Lowest point: {lowest_point:.2f}"
                 )
                 break
-
+    """
 
     plt.show()
     return fig, ax
