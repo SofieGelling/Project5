@@ -157,7 +157,7 @@ def display_battery_status():
         st.markdown("</div>", unsafe_allow_html=True)
 
         if st.session_state.show_dataframe:
-            st.write("Adjusted DataFrame: \n - Afstand in meters: shows the distance of the trip \n - energieverbruik nieuw: shows the new calculated energy usage for the trip \n - Huidige energie: shows the current energy of the bus \n - Status: shows if the bus is above (OK) or below (Opladen Nodig) the minimum battery percentage")
+            st.write("Adjusted DataFrame: \n - Dictance in meters: shows the distance of the trip \n - Energy consumption new: shows the new calculated energy usage for the trip \n - Current energy: shows the current energy of the bus \n - Status: shows if the bus is above (OK) or below (Opladen Nodig) the minimum battery percentage")
             st.dataframe(df_vertaald)
 
         # Button to download DataFrame as Excel
