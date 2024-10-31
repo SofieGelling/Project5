@@ -71,13 +71,13 @@ def file_upload_section():
 
     # Display error messages if files are missing
     if dienstregeling_file is None:
-        st.error("Error: No Excel file uploaded with the time table. Please upload a file like \"Connexxion data - 2024-2025.xlsx\", containing a sheet named \"Dienstregeling\" and \"Afstandsmatrix\" in the 'Import Data' section.")
+        st.error("No Excel file uploaded with the time table. Please upload a file like \"Connexxion data - 2024-2025.xlsx\", containing a sheet named \"Dienstregeling\" and \"Afstandsmatrix\" in the 'Import Data' section.")
     if omloopplanning_file is None:
-        st.error("Error: No Excel file uploaded with the filled in bus planning. Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
+        st.error("No Excel file uploaded with the filled in bus planning. Please upload a file like \"omloopplanning.xlsx\" in the 'Import Data' section.")
 
 # Display Infeasible Trips section
 def display_infeasible_trips():
-    if st.button("Check: Infeasible Trips"):
+    if st.button("Check: Unachievable Trips within Scheduled Time"):
         st.session_state.show_infeasible_trips = not st.session_state.show_infeasible_trips
 
     if st.session_state.show_infeasible_trips:
@@ -85,7 +85,7 @@ def display_infeasible_trips():
             pd.read_excel(st.session_state.uploaded_omloopplanning),
             pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
         )
-        st.write("Infeasible trips:")
+        st.write("Unachievable Trips within Scheduled Time:")
         st.write("This section displays the trips that are infeasible in the busplanning. \nIf nothing is shown here, all trips are feasible.")
         df_niet_haalbaar = rit_haalbaar_binnen_tijd.niet_haalbare_ritten()
         df_niet_haalbaar = DataframeCleaning.omloopplanningEngels(df_niet_haalbaar)
@@ -136,6 +136,8 @@ def display_battery_status():
         df = AC.Afstand_omloop_toevoegen(df, connexxion_data)
         df = AC.add_energy_usage_column(df, soh_value=soh_value)
         df = AC.status(df, 300, soh_value)
+        df = df[selected_columns]
+        df_vertaald = DataframeCleaning.omloopplanning_vertalen(df)
 
         # Inner "Show/Hide Visualization" button with lighter purple style
         st.markdown('<div class="stButton inner-button">', unsafe_allow_html=True)
@@ -150,25 +152,25 @@ def display_battery_status():
 
         # Inner "Show/Hide DataFrame" button with lighter purple style
         st.markdown('<div class="stButton inner-button">', unsafe_allow_html=True)
-        if st.button("DataFrame with Battery Status", key="dataframe_toggle", help="Click to show/hide the DataFrame"):
+        if st.button("Shedule with Battery Status", key="dataframe_toggle", help="Click to show/hide the DataFrame"):
             st.session_state.show_dataframe = not st.session_state.show_dataframe
         st.markdown("</div>", unsafe_allow_html=True)
 
         if st.session_state.show_dataframe:
             st.write("Adjusted DataFrame: \n - Afstand in meters: shows the distance of the trip \n - energieverbruik nieuw: shows the new calculated energy usage for the trip \n - Huidige energie: shows the current energy of the bus \n - Status: shows if the bus is above (OK) or below (Opladen Nodig) the minimum battery percentage")
-            st.dataframe(df[selected_columns])
+            st.dataframe(df_vertaald)
 
         # Button to download DataFrame as Excel
         st.markdown('<div class="stButton inner-button">', unsafe_allow_html=True)
         buffer = io.BytesIO()
         df[selected_columns].to_excel(buffer, index=False)
         st.download_button(
-            label="Download DataFrame as Excel",
+            label="Download Schedule with Battery Status as Excel",
             data=buffer,
             file_name="battery_status_data.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             key="download_button",
-            help="Download the DataFrame as an Excel file",
+            help="Download the Schedule as an Excel file",
         )
 
 
