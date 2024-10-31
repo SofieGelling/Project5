@@ -152,7 +152,7 @@ def display_battery_status():
 
         # Inner "Show/Hide DataFrame" button with lighter purple style
         st.markdown('<div class="stButton inner-button">', unsafe_allow_html=True)
-        if st.button("Shedule with Battery Status", key="dataframe_toggle", help="Click to show/hide the DataFrame"):
+        if st.button("Schedule with Battery Status", key="dataframe_toggle", help="Click to show/hide the DataFrame"):
             st.session_state.show_dataframe = not st.session_state.show_dataframe
         st.markdown("</div>", unsafe_allow_html=True)
 

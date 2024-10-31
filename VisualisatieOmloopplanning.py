@@ -260,8 +260,8 @@ def visualiseer_omloopplanning_met_oplaadmarkering(Gelezen_document):
     legend_elements = [
         Patch(facecolor='#4682B4', label='regular trip ehvapt -> ehvbst'),
         Patch(facecolor='#6495ED', label='regular trip ehvbst -> ehvapt'),
-        Patch(facecolor='#FF8C00', label='material trip ehvapt -> ehvbst'),
-        Patch(facecolor='#FFD700', label='material trip ehvbst -> ehvapt'),
+        Patch(facecolor='#FF8C00', label='deadhead trip ehvapt -> ehvbst'),
+        Patch(facecolor='#FFD700', label='deadhead trip ehvbst -> ehvapt'),
         Patch(facecolor='lightgrey', label='idle'),
         Patch(facecolor='#00EE00', label='charging'),
         Patch(facecolor='#C1FFC1', label='material trip to garage'),
