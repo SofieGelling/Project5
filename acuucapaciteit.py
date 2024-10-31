@@ -89,7 +89,7 @@ def detecteer_en_verwijder_foute_rijen(df):
     
     return df
 
-def status(omloopplanning_df, original_capacity, SOH, min_SOC_percentage):
+def status(omloopplanning_df, original_capacity, SOH):
     """
     Maak een nieuwe dataframe waarin de de huidige enrgie per rit per omloop word gegeven, 
     met een status kolom die aangeeft of de waarde onder de State of Charge komt of niet. Zo kan je controlleren
@@ -102,8 +102,8 @@ def status(omloopplanning_df, original_capacity, SOH, min_SOC_percentage):
     SOH_max = State of Health maximale waarde (factor)
     min_SOC_percentage = State of Charge minimale waarde (factor)
     """
-    current_capacity = original_capacity * SOH # Bereken de huidige accucapaciteit gebaseerd op SOH
-    min_SOC_kWh = current_capacity * min_SOC_percentage # Minimale SOC in kWh
+    current_capacity = original_capacity * 0.9 * SOH # Bereken de huidige accucapaciteit gebaseerd op SOH
+    min_SOH_kWh = original_capacity * 0.10 * SOH # Minimale SOC in kWh
 
    
     omloopplanning_df['Huidige energie'] = 0.0 # Kolom voor de huidige hoeveelheid energie 
@@ -113,7 +113,7 @@ def status(omloopplanning_df, original_capacity, SOH, min_SOC_percentage):
     df_lijst = [] # Lege lijst om de dataframes voor elke omloop op te slaan
     
     for soort, groep in bussoort: # Loop door elke omloop
-        current_SOC = current_capacity # Begin met een volle accu voor elke omloop van 270 kWh
+        current_SOC = current_capacity # Begin met een volle accu voor elke omloop
 
     
         for index, row in groep.iterrows(): # Itereer door elke rij binnen de huidige omloop
@@ -122,7 +122,7 @@ def status(omloopplanning_df, original_capacity, SOH, min_SOC_percentage):
         
             groep.at[index, 'Huidige energie'] = current_SOC # Sla de huidige energie op in de dataframe
         
-            if current_SOC < min_SOC_kWh: # Controleer of de SOC onder het minimum komt
+            if current_SOC < min_SOH_kWh: # Controleer of de SOC onder het minimum komt
                 groep.at[index, 'Status'] = 'Opladen nodig' # Wel, daar gaat het fout, er moest opgeladen worden
             else:
                 groep.at[index, 'Status'] = 'OK' # Niet, dat is goed, de planning hier klopt
@@ -269,7 +269,7 @@ def main():
     df = voeg_idle_tijden_toe(df)
     df = Afstand_omloop_toevoegen(df, connexxion_data)
     df = add_energy_usage_column(df, soh_value=0.85)
-    df = status(df, 300, 0.90, 0.10)
+    df = status(df, 300, 0.90)
     df.to_excel("nieuwe_data.xlsx", index=False)
     check_oplaadtijd(df)
     print(df.columns)
