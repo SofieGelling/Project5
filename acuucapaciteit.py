@@ -222,7 +222,7 @@ def tel_ritten_per_type(df):
     """
     # Controleer of de kolom 'activiteit' aanwezig is in de DataFrame
     if 'activiteit' not in df.columns:
-        raise ValueError("De kolom 'activiteit' ontbreekt in de DataFrame.")
+        raise ValueError("The column 'activiteit' is missing in the Dataframe.")
 
     # Tel het aantal rijen per activiteit
     dienstritten = df[df['activiteit'] == 'dienst rit'].shape[0]
