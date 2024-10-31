@@ -86,11 +86,11 @@ def display_infeasible_trips():
             pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Afstandsmatrix")
         )
         st.write("Infeasible trips:")
+        st.write("This section displays the trips that are infeasible in the busplanning. \nIf nothing is shown here, all trips are feasible.")
         df_niet_haalbaar = rit_haalbaar_binnen_tijd.niet_haalbare_ritten()
         df_niet_haalbaar = DataframeCleaning.omloopplanningEngels(df_niet_haalbaar)
         df_niet_haalbaar = DataframeCleaning.dienstregelingEngels(df_niet_haalbaar)
         st.dataframe(df_niet_haalbaar)
-        st.write("This section displays the trips that are infeasible in the schedule. \nIf nothing is shown here, all trips are feasible.")
         st.markdown("---")
 
 # Display Inaccuracies in Timetable section
@@ -105,10 +105,10 @@ def display_inaccuracies_in_timetable():
             pd.read_excel(st.session_state.uploaded_dienstregeling, sheet_name="Dienstregeling")
         )
         st.write("Inaccuracies in the design of the timetable:")
+        st.write("These are trips from the timetable that: \n - are not assigned to any bus; \n - are assigned to multiple buses simultaneously.")
         df_inaccuracies = check_1_bus_per_rit.niet_correcte_ritten()
         df_inaccuracies = DataframeCleaning.dienstregelingEngels(df_inaccuracies)
         st.dataframe(df_inaccuracies)
-        st.write("These are trips from the timetable that: \n - are not assigned to any bus; \n - are assigned to multiple buses simultaneously.")
         st.markdown("---")
 
 # Display Battery Status Visualization and DataFrame controls
@@ -135,7 +135,7 @@ def display_battery_status():
         df = AC.detecteer_en_verwijder_foute_rijen(df)
         df = AC.Afstand_omloop_toevoegen(df, connexxion_data)
         df = AC.add_energy_usage_column(df, soh_value=soh_value)
-        df = AC.status(df, 300, 0.90, 0.10)
+        df = AC.status(df, 300, soh_value)
 
         # Inner "Show/Hide Visualization" button with lighter purple style
         st.markdown('<div class="stButton inner-button">', unsafe_allow_html=True)
