@@ -9,8 +9,8 @@ dienstregeling = pd.read_excel('Connexxion data - 2024-2025.xlsx', sheet_name='D
 def Twee_dataframes(dienstregeling, afstandsmatrix):
     # Convert 'vertrektijd' column to datetime, with error handling
     dienstregeling['vertrektijd'] = pd.to_datetime(dienstregeling['vertrektijd'], format='%H:%M', errors='coerce')
-    # Drop rows where 'vertrektijd' could not be converted
-    dienstregeling = dienstregeling.dropna(subset=['vertrektijd']) #dit moet misschien niet          <<-------------------
+    # # Drop rows where 'vertrektijd' could not be converted
+    # dienstregeling = dienstregeling.dropna(subset=['vertrektijd']) #dit moet misschien niet          <<-------------------
 
     # Merge dienstregeling with afstandsmatrix on 'startlocatie', 'eindlocatie', and 'buslijn' to get max reistijd in min
     dienstregeling = dienstregeling.merge(
@@ -75,6 +75,8 @@ dienstregeling = dienstregeling.merge(
 )
 dienstregeling['eindtijd'] = dienstregeling['vertrektijd'] + pd.to_timedelta(dienstregeling['max reistijd in min'], unit='m')
 dienstregeling['early_morning'] = dienstregeling['vertrektijd'].dt.hour < 5
+dienstregeling['vertrektijd'] = dienstregeling['vertrektijd'] + pd.to_timedelta(1, unit="days") * dienstregeling['early_morning']
+dienstregeling['eindtijd'] = dienstregeling['eindtijd'] + pd.to_timedelta(1, unit="days") * dienstregeling['early_morning']
 dienstregeling = dienstregeling.sort_values(by=['early_morning', 'vertrektijd']).reset_index(drop=True)
 dienstregeling = dienstregeling.drop(columns=['early_morning'])
 
@@ -83,6 +85,7 @@ dienstregeling = dienstregeling.drop(columns=['early_morning'])
 #input("druk op een toets om door te gaan")
 
 #'lijst' met omlopen (dictionary omdat we starten 1 ipv 0)
+omlopen:dict[pd.DataFrame]
 omlopen = {}
 
 #het nummer van de eerte omloop
@@ -90,7 +93,6 @@ omloop_nr = 1
 
 #blijft een omloop toevoegen zolang het nodig is
 while len(dienstregeling) > 0: #dit is de goeie
-# while len(dienstregeling) > 18: #dit is om te testen want er gaat iets mis
     #voeg de eerste rit voor deze omloop toe
     i = 0
     omlopen[omloop_nr] = pd.DataFrame({'startlocatie': [], 'eindlocatie': [], 'starttijd': [], 'eindtijd': [], 'activiteit': [], 'buslijn': [], 'energieverbruik': [], 'starttijd datum': [], 'eindtijd datum': [], 'omloop nummer':[], 'Huidige energie': []})
@@ -135,3 +137,8 @@ for i in omlopen:
     print(f'omloop {i}: ')
     print(omlopen[i])
     print("")
+
+omloop_df = pd.concat([omlopen[i] for i in range(1, len(omlopen) + 1)])
+
+import VisualisatieOmloopplanning as VC
+#VC.Visualiatie(omloop_df)
