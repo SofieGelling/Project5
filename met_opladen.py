@@ -173,6 +173,44 @@ def voeg_oplaad_momenten_toe(omloop, omloop_nr):
     # Voeg de nieuwe rijen toe aan de omloop en retourneer de bijgewerkte omloop
     return pd.concat([omloop, pd.DataFrame(nieuwe_rijen)], ignore_index=True)
 
+def verplaats_rit_met_index_aanpassing(omloop: pd.DataFrame, oude_index: int, nieuwe_index: int) -> pd.DataFrame:
+    """
+    Verplaatst een rit in het omloop-DataFrame van oude_index naar nieuwe_index.
+    Past de index van het DataFrame aan om de juiste volgorde te behouden.
+    
+    Parameters:
+    - omloop (pd.DataFrame): Het DataFrame met de omloop waarin de ritten zijn opgeslagen.
+    - oude_index (int): De huidige index van de rit die je wilt verplaatsen.
+    - nieuwe_index (int): De nieuwe index waar je de rit wilt plaatsen.
+    
+    Returns:
+    - pd.DataFrame: Een nieuw DataFrame met de verplaatste rit en bijgewerkte index.
+    """
+    # Controleer of indices binnen het bereik van de DataFrame liggen
+    if oude_index < 0 or oude_index >= len(omloop):
+        raise IndexError("oude_index ligt buiten het bereik van het DataFrame.")
+    if nieuwe_index < 0 or nieuwe_index > len(omloop):
+        raise IndexError("nieuwe_index ligt buiten het bereik van het DataFrame.")
+    
+    # Haal de rit op die verplaatst moet worden
+    rit = omloop.iloc[oude_index]
+    
+    # Verwijder de rit van de oude positie
+    omloop = omloop.drop(omloop.index[oude_index]).reset_index(drop=True)
+    
+    # Voeg de rit in op de nieuwe positie
+    bovenste_gedeelte = omloop.iloc[:nieuwe_index]
+    onderste_gedeelte = omloop.iloc[nieuwe_index:]
+    
+    # Construeer het nieuwe DataFrame met de verplaatste rit op de juiste plek
+    omloop = pd.concat([bovenste_gedeelte, rit.to_frame().T, onderste_gedeelte], ignore_index=True)
+    
+    # Reset de index van het DataFrame om de volgorde bij te werken
+    omloop.reset_index(drop=True, inplace=True)
+    
+    return omloop
+
+
 # Data inladen
 omloopplanning = pd.read_excel('omloopplanning.xlsx')
 afstandsmatrix = pd.read_excel('Connexxion data - 2024-2025.xlsx', sheet_name='Afstandsmatrix')
@@ -226,7 +264,7 @@ while len(dienstregeling) > 0:
         else:
             i += 1
         
-        # Controleer of we 13 dienstritten hebben toegevoegd
+        # Controleer of we 11 dienstritten hebben toegevoegd
         if dienstritten_teller == 11:
             # Voeg materiaalritten en oplaadmoment toe
             omlopen[omloop_nr] = voeg_oplaad_momenten_toe(omlopen[omloop_nr], omloop_nr)
@@ -249,10 +287,28 @@ import acuucapaciteit as AC
 omloop_df = AC.voeg_idle_tijden_toe(omloop_df)
 omloop_df = AC.Afstand_omloop_toevoegen(omloop_df, afstandsmatrix)
 omloop_df = AC.add_energy_usage_column(omloop_df)
-omloop_df = AC.status(omloop_df, 300, 0.90)
+omloop_df = AC.status(omloop_df, 300, 0.85)
 
 # Visualiseer omloopplanning met de VisualisatieOmloopplanning-module (als die beschikbaar is)
 import VisualisatieOmloopplanning as VC
-VC.visualiseer_omloopplanning_met_oplaadmarkering(omloop_df)
+#VC.visualiseer_omloopplanning_met_oplaadmarkering(omloop_df)
 
 omloop_df.to_excel("nieuwe_planning.xlsx", index=False)
+
+df = pd.read_excel('AANGEPAST_planning.xlsx')
+
+df = df.dropna(subset=['activiteit'])
+
+df = df.reset_index(drop=True)
+
+df['starttijd'] = df['starttijd datum'].dt.time
+df['eindtijd'] = df['eindtijd datum'].dt.time
+
+import acuucapaciteit as AC
+df = AC.voeg_idle_tijden_toe(df)
+df = AC.Afstand_omloop_toevoegen(df, afstandsmatrix)
+df = AC.add_energy_usage_column(df)
+df = AC.status(df, 300, 0.85)
+VC.visualiseer_omloopplanning_met_oplaadmarkering(df)
+
+df.to_excel("DE_PLANNING_handmatig.xlsx", index=False)
