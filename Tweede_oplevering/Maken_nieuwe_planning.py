@@ -106,6 +106,7 @@ def voeg_materiaalritten_toe_aan_omlopen(omloop_df):
     omloop_df = omloop_df.sort_values(by=['omloop nummer', 'starttijd datum']).reset_index(drop=True)
     return omloop_df
 
+# Functie om oplaadmomenten op het begin en einde toe te voegen
 def voeg_oplaad_momenten_toe(omloop, omloop_nr):
     # Stap 1: Bepaal de laatste rit en de locatie waar de rit eindigt
     laatste_rit = omloop.iloc[-1]
@@ -173,6 +174,7 @@ def voeg_oplaad_momenten_toe(omloop, omloop_nr):
     # Voeg de nieuwe rijen toe aan de omloop en retourneer de bijgewerkte omloop
     return pd.concat([omloop, pd.DataFrame(nieuwe_rijen)], ignore_index=True)
 
+# Functie om de lossen ritten in elkaar te voegen
 def verplaats_rit_met_index_aanpassing(omloop: pd.DataFrame, oude_index: int, nieuwe_index: int) -> pd.DataFrame:
     """
     Verplaatst een rit in het omloop-DataFrame van oude_index naar nieuwe_index.
@@ -282,33 +284,39 @@ while len(dienstregeling) > 0:
 omloop_df = pd.concat([omlopen[i] for i in range(1, len(omlopen) + 1)], ignore_index=True)
 omloop_df = voeg_materiaalritten_toe_aan_omlopen(omloop_df)
 
-
 import acuucapaciteit as AC
 omloop_df = AC.voeg_idle_tijden_toe(omloop_df)
 omloop_df = AC.Afstand_omloop_toevoegen(omloop_df, afstandsmatrix)
 omloop_df = AC.add_energy_usage_column(omloop_df)
 omloop_df = AC.status(omloop_df, 300, 0.85)
 
-# Visualiseer omloopplanning met de VisualisatieOmloopplanning-module (als die beschikbaar is)
-import VisualisatieOmloopplanning as VC
-#VC.visualiseer_omloopplanning_met_oplaadmarkering(omloop_df)
-
 omloop_df.to_excel("nieuwe_planning.xlsx", index=False)
 
+
+
+"""
+---------------------------------------------------------------------------------------------------------------------------------------
+NU HEB JE EEN OMLOOPPLANNING DIE CORRECT IS "nieuwe_planning.xlxs", DEZE WORDT AANGEPAST (HANDMATIG) 
+EN ONDER DE NIEUWE NAAM 'AANGEPAST_planning.xlsx' GEZET.
+---------------------------------------------------------------------------------------------------------------------------------------
+"""
+
+# Lezen bestand
 df = pd.read_excel('AANGEPAST_planning.xlsx')
-
+# Drop de lege rijen
 df = df.dropna(subset=['activiteit'])
-
+# Reset de index
 df = df.reset_index(drop=True)
-
+# pas de start en eindtijden aan zodat deze overal hetzelfde zijn
 df['starttijd'] = df['starttijd datum'].dt.time
 df['eindtijd'] = df['eindtijd datum'].dt.time
+# pas de kolom aan en visualiseer het 
 
-import acuucapaciteit as AC
-df = AC.voeg_idle_tijden_toe(df)
-df = AC.Afstand_omloop_toevoegen(df, afstandsmatrix)
-df = AC.add_energy_usage_column(df)
-df = AC.status(df, 300, 0.85)
-VC.visualiseer_omloopplanning_met_oplaadmarkering(df)
+df = CV.voeg_idle_tijden_toe(df)
+df = CV.Afstand_omloop_toevoegen(df, afstandsmatrix)
+df = CV.add_energy_usage_column(df)
+df = CV.status(df, 300, 0.85)
+
+CV.visualiseer_omloopplanning_met_oplaadmarkering(df)
 
 df.to_excel("DE_PLANNING_handmatig.xlsx", index=False)
