@@ -275,4 +275,4 @@ def main():
     print(df.columns)
     VO.visualiseer_omloopplanning_met_oplaadmarkering(df)
 
-main()
+
