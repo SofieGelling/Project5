@@ -109,10 +109,10 @@ omloop_df = pd.concat([omlopen[i] for i in range(1, len(omlopen) + 1)], ignore_i
 
 # Visualiseer omloopplanning met de VisualisatieOmloopplanning-module (als die beschikbaar is)
 import VisualisatieOmloopplanning as VC
-# VC.Visualiatie(omloop_df)
+VC.Visualiatie(omloop_df)
 
-import acuucapaciteit as AC
-omloop_df = AC.Afstand_omloop_toevoegen(omloop_df, afstandsmatrix)
-omloop_df = AC.add_energy_usage_column(omloop_df)
+#import acuucapaciteit as AC
+#omloop_df = AC.Afstand_omloop_toevoegen(omloop_df, afstandsmatrix)
+#omloop_df = AC.add_energy_usage_column(omloop_df)
 
 omloop_df.to_excel("nieuwe_planning.xlsx", index=False)
