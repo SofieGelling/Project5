@@ -102,4 +102,15 @@ for i in omlopen:
 omloop_df = pd.concat([omlopen[i] for i in range(1, len(omlopen) + 1)])
 
 import VisualisatieOmloopplanning as VC
-VC.Visualiatie(omloop_df) 
+# VC.Visualiatie(omloop_df) 
+
+import check_1_bus_per_rit as BPR
+omloop_df[['starttijd', 'eindtijd', 'starttijd datum', 'eindtijd datum']] = omloop_df[['starttijd', 'eindtijd', 'starttijd datum', 'eindtijd datum']].astype(str)
+import numpy as np
+
+
+BPR.initialisatie()
+BPR.data_opgeschoond = True
+BPR.omloopplanning = omloop_df
+print("niet-correcte ritten")
+print(BPR.niet_correcte_ritten())

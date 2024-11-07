@@ -49,14 +49,14 @@ def data_opschonen():
 def aantal_bussen_ingepland_voor_rit(rit:pd.DataFrame)->int:
     aantal_bussen_voor_dienst = omloopplanning[(omloopplanning["startlocatie"] == rit["startlocatie"])
                                                & (omloopplanning["eindlocatie"] == rit["eindlocatie"])
-                                               & (pd.Series(omloopplanning["starttijd"].str[:-3]) == rit["vertrektijd"])
+                                               & (pd.Series(omloopplanning["starttijd"].str[-8:-3]) == rit["vertrektijd"])
                                                & (omloopplanning["buslijn"] == rit["buslijn"])
                                                ]
     return len(aantal_bussen_voor_dienst)
 
 def kolommen_toevoegen_aantal_bussen():
     global correctheid_berekend
-    dienstregeling.iat[1,1] = "06:05"
+    # om te testen: dienstregeling.iat[1,1] = "06:05"
     dienstregeling["Number of busses planned for this trip"] = dienstregeling.apply(aantal_bussen_ingepland_voor_rit, axis=1)
     correctheid_berekend = True
 
