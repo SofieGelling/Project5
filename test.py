@@ -40,6 +40,73 @@ def merge_single_trip_if_possible(omlopen, omloop_nr):
             omlopen[omloop_nr - 1] = pd.concat([omlopen[omloop_nr - 1], omlopen[omloop_nr]], ignore_index=True)
             del omlopen[omloop_nr]
 
+# Functie om materiaalritten toe te voegen aan het begin en einde van elke omloop in omloop_df
+def voeg_materiaalritten_toe_aan_omlopen(omloop_df):
+    nieuwe_rijen = []
+
+    for omloop_nr in omloop_df['omloop nummer'].unique():
+        omloop_data = omloop_df[omloop_df['omloop nummer'] == omloop_nr]
+        
+        # Materiaalrit toevoegen aan het begin
+        eerste_rit = omloop_data.iloc[0]
+        locatie_start = eerste_rit['startlocatie']
+        
+        if locatie_start == 'ehvbst':
+            tijd_in_minuten = 4
+        elif locatie_start == 'ehvapt':
+            tijd_in_minuten = 20
+        else:
+            raise ValueError("Onbekende locatie voor de materiaalrit")
+
+        starttijd = eerste_rit['starttijd datum'] - pd.Timedelta(minutes=tijd_in_minuten)
+        eindtijd = eerste_rit['starttijd datum']
+        nieuwe_rijen.append({
+            'startlocatie': 'ehvgar',
+            'eindlocatie': locatie_start,
+            'starttijd': starttijd,
+            'eindtijd': eindtijd,
+            'activiteit': 'materiaal rit',
+            'buslijn': None,
+            'energieverbruik': 0,
+            'starttijd datum': starttijd,
+            'eindtijd datum': eindtijd,
+            'omloop nummer': omloop_nr,
+            'Huidige energie': 200
+        })
+
+        # Materiaalrit toevoegen aan het einde
+        laatste_rit = omloop_data.iloc[-1]
+        locatie_eind = laatste_rit['eindlocatie']
+        
+        if locatie_eind == 'ehvbst':
+            tijd_in_minuten = 4
+        elif locatie_eind == 'ehvapt':
+            tijd_in_minuten = 20
+        else:
+            raise ValueError("Onbekende locatie voor de materiaalrit")
+
+        starttijd = laatste_rit['eindtijd datum']
+        eindtijd = starttijd + pd.Timedelta(minutes=tijd_in_minuten)
+        nieuwe_rijen.append({
+            'startlocatie': locatie_eind,
+            'eindlocatie': 'ehvgar',
+            'starttijd': starttijd,
+            'eindtijd': eindtijd,
+            'activiteit': 'materiaal rit',
+            'buslijn': None,
+            'energieverbruik': 0,
+            'starttijd datum': starttijd,
+            'eindtijd datum': eindtijd,
+            'omloop nummer': omloop_nr,
+            'Huidige energie': 200
+        })
+    # Voeg de nieuwe materiaalritten toe aan omloop_df en sorteert deze opnieuw op omloopnummer en starttijd
+    materiaalritten_df = pd.DataFrame(nieuwe_rijen)
+    omloop_df = pd.concat([omloop_df, materiaalritten_df], ignore_index=True)
+    omloop_df = omloop_df.sort_values(by=['omloop nummer', 'starttijd datum']).reset_index(drop=True)
+    return omloop_df
+
+
 # Data inladen
 omloopplanning = pd.read_excel('omloopplanning.xlsx')
 afstandsmatrix = pd.read_excel('Connexxion data - 2024-2025.xlsx', sheet_name='Afstandsmatrix')
@@ -97,22 +164,20 @@ while len(dienstregeling) > 0:
     # Omloopnummer verhogen voor de volgende iteratie
     omloop_nr += 1
 
+
 # Concateneer alle omlopen in één DataFrame
 omloop_df = pd.concat([omlopen[i] for i in range(1, len(omlopen) + 1)], ignore_index=True)
+omloop_df = voeg_materiaalritten_toe_aan_omlopen(omloop_df)
 
 
-# Omlopen afdrukken voor controle
-#for i in omlopen:
-#   print(f'omloop {i}: ')
-#   print(omlopen[i])
-#    print("")
+import acuucapaciteit as AC
+omloop_df = AC.voeg_idle_tijden_toe(omloop_df)
+omloop_df = AC.Afstand_omloop_toevoegen(omloop_df, afstandsmatrix)
+omloop_df = AC.add_energy_usage_column(omloop_df)
+omloop_df = AC.status(omloop_df, 300, 0.90)
 
 # Visualiseer omloopplanning met de VisualisatieOmloopplanning-module (als die beschikbaar is)
 import VisualisatieOmloopplanning as VC
-VC.Visualiatie(omloop_df)
-
-#import acuucapaciteit as AC
-#omloop_df = AC.Afstand_omloop_toevoegen(omloop_df, afstandsmatrix)
-#omloop_df = AC.add_energy_usage_column(omloop_df)
+VC.visualiseer_omloopplanning_met_oplaadmarkering(omloop_df)
 
 omloop_df.to_excel("nieuwe_planning.xlsx", index=False)
