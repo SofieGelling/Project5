@@ -54,6 +54,7 @@ omloop_nr = 1
 
 #blijft een omloop toevoegen zolang het nodig is
 while len(dienstregeling) > 0: #dit is de goeie
+    highest_index_dienstregeling = len(dienstregeling) - 1
     #voeg de eerste rit voor deze omloop toe
     i = 0
     omlopen[omloop_nr] = pd.DataFrame({'startlocatie': [], 'eindlocatie': [], 'starttijd': [], 'eindtijd': [], 'activiteit': [], 'buslijn': [], 'energieverbruik': [], 'starttijd datum': [], 'eindtijd datum': [], 'omloop nummer':[], 'Huidige energie': []})
@@ -67,27 +68,27 @@ while len(dienstregeling) > 0: #dit is de goeie
     i = 1
     
     #blijf ritten aan deze omloop toevoegen tot alle dienstritten zijn bekeken.
-    while i < len(dienstregeling) and len(dienstregeling) > 0:
+    while i <= highest_index_dienstregeling and len(dienstregeling) > 0:
         # berekeningen
+        
         omloop_laatste_rit_index = len(omlopen[omloop_nr])-1
         aankomsttijd_vorige_rit = omlopen[omloop_nr].at[omloop_laatste_rit_index, 'eindtijd']
         vertrektijd_dienstrit = dienstregeling.at[i, 'vertrektijd']
-        tijd_voor_uit_en_instappen = pd.Timedelta(1, unit="minute")
         huidige_locatie_bus = omlopen[omloop_nr].at[omloop_laatste_rit_index, 'eindlocatie']
         startlocatie_dienstregeling = dienstregeling.at[i, 'startlocatie']
         
         # voeg de rit toe als de bus op tijd is en op de juiste plek
-        if huidige_locatie_bus == startlocatie_dienstregeling and aankomsttijd_vorige_rit <= vertrektijd_dienstrit - tijd_voor_uit_en_instappen:
+        if huidige_locatie_bus == startlocatie_dienstregeling and aankomsttijd_vorige_rit <= vertrektijd_dienstrit:
             # # debug print
             # print(f"omloop_nr: {omloop_nr}, i: {i}, aankomsttijd_vorige_rit: {aankomsttijd_vorige_rit}, vertrektijd_dienstrit: {vertrektijd_dienstrit}, huidige_locatie_bus: {huidige_locatie_bus}, startlocatie_dienstregeling: {startlocatie_dienstregeling}")
             
             omlopen[omloop_nr] = rit_toevoegen(omlopen[omloop_nr], dienstregeling.loc[i], omloop_nr)
             dienstregeling.drop(i, inplace=True)
+            omlopen[omloop_nr].reset_index(inplace=True, drop=True)
         i = i + 1
     # # debug pauze
     # input("druk op een toets om door te gaan")
     
-    omlopen[omloop_nr].reset_index(inplace=True, drop=True)
     dienstregeling.reset_index(inplace=True, drop=True)
     
     #het nummer van de volgende omloop
