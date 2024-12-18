@@ -24,17 +24,18 @@ def total_weight(data):
 def wind_speed_bus(data):
     # Convert wind directions to radians and calculate effective wind speed
     data[['Wind_direction_to_earth_radians', 'Wind_direction_to_bus_radians']] = np.radians(data[['Wind_direction_to_earth', 'Wind_direction_to_bus']])
-    data['effective_wind_speed'] = np.cos(data['Wind_direction_to_bus_radians']) * data['Wind_speed']
+    data['Wind_speed_m/s'] = data['Wind_speed']/3.6
+    data['effective_wind_speed_m/s'] = np.cos(data['Wind_direction_to_bus_radians']) * data['Wind_speed_m/s']
     return data
 
 def delta_wind_speed(data):
     # Calculate delta wind speed
-    data['delta_wind_speed'] = data['WheelBasedVehicleSpeed'] - data['effective_wind_speed']
+    data['delta_wind_speed_m/s'] = data['WheelBasedVehicleSpeed'] - data['effective_wind_speed_m/s']
     return data
 
 def average_eff_wind_speed(data):
     # Add the mean of effective wind speed to all rows
-    data['average_effective_wind_speed'] = data['effective_wind_speed'].mean()
+    data['average_effective_wind_speed_m/s'] = data['effective_wind_speed_m/s'].mean()
     return data
 
 def main():
