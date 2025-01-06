@@ -6,6 +6,16 @@ def no_brakes(data):
     data = data[data['BrakePedalPos'] == 0]
     return data
 
+def P_in(data):
+    # Add P engine in column
+    data['P_in'] = data['DICO3_DCLinkVoltageDriveSystem']*data['DICO3_DCLINKTractionCurrent']
+    return data
+
+def P_dissipation(data):
+    # Add P engine dissipation column
+    data['P_dissipation'] = data['P_in'] - data['P_out']
+    return data
+
 def max_weight(data):
     # Add max loaded weight column
     data['max_loaded_weight'] = 29000
@@ -52,6 +62,8 @@ def main():
     df_filtered = wind_speed_bus(df_filtered)
     df_filtered = delta_wind_speed(df_filtered)
     df_filtered = average_eff_wind_speed(df_filtered)
+    df_filtered = P_in(df_filtered)
+    df_filtered = P_dissipation(df_filtered)
 
     # Save the filtered DataFrame to an Excel file
     df_filtered.to_excel('filtered_data_project_5_deel_2.xlsx', index=False)
