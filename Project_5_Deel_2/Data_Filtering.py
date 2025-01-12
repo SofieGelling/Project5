@@ -1,6 +1,12 @@
 import pandas as pd
 import numpy as np
 
+def acceleration(data):
+    # Calculate acceleration (set first value to 0)
+    data['Acceleration'] = data['WheelBasedVehicleSpeed'].diff() / 1  # Delta t = 1 second
+    data.loc[0, 'Acceleration'] = 0  # Set the first value to 0
+    return data
+
 def no_brakes(data):
     # Filter data where BrakePedalPos is 0
     data = data[data['BrakePedalPos'] == 0]
@@ -55,6 +61,7 @@ def main():
     df_filtered = df.copy()
 
     # Apply transformations
+    df_filtered = acceleration(df_filtered)
     df_filtered = no_brakes(df_filtered)
     df_filtered = max_weight(df_filtered)
     df_filtered = min_weight(df_filtered)
