@@ -20,9 +20,9 @@ def filter_efficiency(data):
 
     data = data[(data['P_in'] > 0) & (data['P_out'] >= 0)]
 
-    # Clamp efficiency to a valid range [0, 1]
+    # Clamp efficiency to a valid range [0, 1] using .loc to avoid SettingWithCopyWarning
 
-    data['Efficiency'] = np.clip(data['Efficiency'], 0, 1)
+    data.loc[:, 'Efficiency'] = np.clip(data['Efficiency'], 0, 1)
 
     return data
  
@@ -74,11 +74,13 @@ def main():
 
         values='Efficiency',
 
-        aggfunc='mean'
+        aggfunc='mean',
+
+        observed=False  # Explicitly set to prevent FutureWarning
 
     )
  
-    # Plot the efficiency map
+    # Plot the efficiency map with a rainbow colormap
 
     plt.figure(figsize=(10, 8))
 
@@ -90,7 +92,7 @@ def main():
 
         pivot_table.values,
 
-        cmap='coolwarm',
+        cmap='rainbow',  # Rainbow colormap for vibrant colors
 
         levels=20
 
