@@ -3,7 +3,6 @@ import pandas as pd
 import rasterio
 from scipy.ndimage import gaussian_filter1d
 from pyproj import Transformer
-import matplotlib.pyplot as plt
 
 # Functie om uitschieters te verwijderen
 def remove_outliers(data, threshold=30):
@@ -51,14 +50,12 @@ filtered_heights = interp_func
 # Stap 5: Pas een Gaussisch filter toe om de data te smoothen
 smoothed_heights = gaussian_filter1d(filtered_heights, sigma=150)  # Sigma bepaalt de mate van smoothing
 
-# Stap 6: Visualiseer de originele en smoothed hoogtes
-plt.figure(figsize=(12, 6))
-plt.plot(route_heights, label='Originele hoogtes', linestyle='dotted', color='blue', alpha=0.6)
-plt.plot(filtered_heights, label='Zonder uitschieters', linestyle='dashed', color='orange', alpha=0.8)
-plt.plot(smoothed_heights, label='Smooth busroute (Gaussisch)', color='green', linewidth=2)
-plt.title('Smooth Hoogtes langs de Busroute', fontsize=16)
-plt.xlabel('Punten langs de route', fontsize=12)
-plt.ylabel('Hoogte (m)', fontsize=12)
-plt.legend()
-plt.grid(True)
-plt.show()
+# Voeg de gesmoothe hoogtes toe aan de originele GPS-data
+gps_data['smoothed_heights'] = smoothed_heights  # Voeg de gesmoothe hoogtes als nieuwe kolom toe
+
+# Opslaan in een nieuwe Excel-file
+output_file = 'gps_data_with_smoothed_heights.xlsx'
+gps_data.to_excel(output_file, index=False)
+
+print(f"Bestand opgeslagen als: {output_file}")
+
