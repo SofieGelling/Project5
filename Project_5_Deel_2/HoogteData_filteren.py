@@ -48,7 +48,7 @@ interp_func = np.interp(np.arange(len(filtered_heights)), np.arange(len(filtered
 filtered_heights = interp_func
 
 # Stap 5: Pas een Gaussisch filter toe om de data te smoothen
-smoothed_heights = gaussian_filter1d(filtered_heights, sigma=150)  # Sigma bepaalt de mate van smoothing
+smoothed_heights = gaussian_filter1d(filtered_heights, sigma=30)  # Sigma bepaalt de mate van smoothing
 
 # Voeg de gesmoothe hoogtes toe aan de originele GPS-data
 gps_data['smoothed_heights'] = smoothed_heights  # Voeg de gesmoothe hoogtes als nieuwe kolom toe
