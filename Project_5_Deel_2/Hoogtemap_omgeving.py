@@ -4,8 +4,9 @@ import rasterio
 from scipy.interpolate import RegularGridInterpolator
 from pyproj import Transformer
 import matplotlib.pyplot as plt
-from matplotlib.colors import LightSource
-from matplotlib import cm  # Voor colormap-functies
+from matplotlib.colors import LightSource, Normalize
+from matplotlib import cm
+from matplotlib.colorbar import ColorbarBase
 
 # Stap 1: Laad de rasterdata (hoogtekaart)
 with rasterio.open('QgisMerge.tif') as src:
@@ -45,16 +46,22 @@ buffered_y = y[y_indices]
 # Stap 4: Visualiseer de omgeving als een reliëfkaart
 fig, ax = plt.subplots(figsize=(12, 8))
 ls = LightSource(azdeg=315, altdeg=45)  # Lichtbron voor schaduw
+cmap = cm.get_cmap('terrain')  # Zorg voor duidelijk onderscheid in kleuren
+norm = Normalize(vmin=buffered_raster.min(), vmax=buffered_raster.max())  # Normaliseer hoogtes
 
-# Zorg ervoor dat cmap een colormap-object is
-shaded_relief = ls.shade(buffered_raster, cmap=cm.get_cmap('terrain'), blend_mode='overlay', vert_exag=1)
+# Maak een schaduwrijke weergave van de hoogtedata
+shaded_relief = ls.shade(buffered_raster, cmap=cmap, blend_mode='overlay', vert_exag=1)
 
 # Toon de reliëfkaart
 extent = [buffered_x[0], buffered_x[-1], buffered_y[-1], buffered_y[0]]
-ax.imshow(shaded_relief, extent=extent, origin='upper')
+im = ax.imshow(shaded_relief, extent=extent, origin='upper')
 
 # Voeg de busroute toe als overlay
 ax.plot(gps_x, gps_y, color='red', linewidth=2, label='Busroute')
+
+# Voeg een kleurenschaal toe
+cbar_ax = fig.add_axes([0.92, 0.25, 0.02, 0.5])  # Locatie van de kleurenschaal
+ColorbarBase(cbar_ax, cmap=cmap, norm=norm, orientation='vertical', label='Hoogte (m)')
 
 # Labels en legenda
 ax.set_title('Reliëfkaart van de omgeving met busroute', fontsize=16)
@@ -62,6 +69,6 @@ ax.set_xlabel('X-coördinaten (m)', fontsize=12)
 ax.set_ylabel('Y-coördinaten (m)', fontsize=12)
 ax.legend(fontsize=12)
 
-# Toon de plot
-plt.tight_layout()
+plt.tight_layout(rect=[0, 0, 0.9, 1])  # Ruimte vrijhouden voor de kleurenschaal
 plt.show()
+
