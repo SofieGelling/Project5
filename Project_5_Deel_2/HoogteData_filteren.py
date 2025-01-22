@@ -10,6 +10,20 @@ def remove_outliers(data, threshold=30):
     data[data > threshold] = np.nan  # Verwijder uitschieters boven de drempel
     return data
 
+# Functie om de helling (slope) te berekenen
+def calculate_slope(heights, distances):
+    slopes = np.zeros(len(heights))  # Initialiseer een array voor de slopes
+    for i in range(1, len(heights)):
+        delta_height = heights[i] - heights[i - 1]  # Verschil in hoogte
+        delta_distance = distances[i] - distances[i - 1]  # Verschil in afstand
+        slopes[i] = delta_height / delta_distance if delta_distance != 0 else 0  # Vermijd deling door nul
+    slopes[0] = 0  # Zorg dat de eerste slope begint bij 0
+    return slopes
+
+# Functie om slope om te zetten naar graden
+def slope_to_degrees(slopes):
+    return np.arctan(slopes) * (180 / np.pi)
+
 # Stap 1: Laad de rasterdata (hoogtekaart)
 with rasterio.open('QgisMerge.tif') as src:
     raster_data = src.read(1)  # Hoogtedata
@@ -48,14 +62,27 @@ interp_func = np.interp(np.arange(len(filtered_heights)), np.arange(len(filtered
 filtered_heights = interp_func
 
 # Stap 5: Pas een Gaussisch filter toe om de data te smoothen
-smoothed_heights = gaussian_filter1d(filtered_heights, sigma=30)  # Sigma bepaalt de mate van smoothing
+smoothed_heights = gaussian_filter1d(filtered_heights, sigma=150)  # Sigma bepaalt de mate van smoothing
+
+# Stap 6: Bereken de cumulatieve afstand langs de route
+gps_data['distance'] = np.sqrt(
+    (gps_data['gps_1'].diff() * 111320) ** 2 +  # Lengtegraad omgezet naar meters
+    (gps_data['gps_0'].diff() * 110540) ** 2   # Breedtegraad omgezet naar meters
+).fillna(0).cumsum()  # Cumulatieve afstand
+
+# Stap 7: Bereken de slope (helling) per punt
+gps_data['slope'] = calculate_slope(smoothed_heights, gps_data['distance'])
+
+# Stap 8: Zet slope om naar graden
+gps_data['slope_degrees'] = slope_to_degrees(gps_data['slope'])
 
 # Voeg de gesmoothe hoogtes toe aan de originele GPS-data
 gps_data['smoothed_heights'] = smoothed_heights  # Voeg de gesmoothe hoogtes als nieuwe kolom toe
 
-# Opslaan in een nieuwe Excel-file
-output_file = 'gps_data_with_smoothed_heights.xlsx'
+# Stap 9: Opslaan in Excel
+output_file = 'gps_data_with_slopes_and_degrees.xlsx'
 gps_data.to_excel(output_file, index=False)
 
-print(f"Bestand opgeslagen als: {output_file}")
+print(f"Bestand met gesmoothe hoogtes, slopes en graden opgeslagen als: {output_file}")
+
 
