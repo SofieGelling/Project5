@@ -7,15 +7,15 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 
 # Stap 1: Laad de rasterdata
-with rasterio.open('QgisMerge.tif') as src: # Opent het tiff bestand
+with rasterio.open('QgisMerge.tif') as src:  # Opent het tiff bestand
     raster_data = src.read(1)  # Lees de eerste band, deze bevat de hoogte data
-    bounds = src.bounds # Krijg de grenzen van het cooordinatensysteem
+    bounds = src.bounds  # Krijg de grenzen van het cooordinatensysteem
     resolution = src.res  # Afmetingen van de pixels in meter 
-    width, height = src.width, src.height # breette en hoogte van het aantal rasters
+    width, height = src.width, src.height  # breette en hoogte van het aantal rasters
     # Dit doe je om te bepalen welke GPS-coördinaten overeenkomen met specifieke pixels in het raster.
 
 # Forceer raster CRS naar RD New (EPSG:28992)
-raster_crs = "EPSG:28992" # Zodat de coordinaten van de busdata overeenkomen met de coordinaten van de rasterdata
+raster_crs = "EPSG:28992"  # Zodat de coordinaten van de busdata overeenkomen met de coordinaten van de rasterdata
 
 # Maak X- en Y-coördinaten voor het raster
 x = np.linspace(bounds.left, bounds.right, width)  # Longitude (X)
@@ -36,6 +36,10 @@ interpolator = RegularGridInterpolator((y[::-1], x), raster_data, bounds_error=F
 gps_points = np.array([gps_y, gps_x]).T
 heights = interpolator(gps_points)
 
+# Toevoeging: Transformeer RD New-coördinaten (meters) terug naar EPSG:4326 (graden)
+reverse_transformer = Transformer.from_crs(raster_crs, "EPSG:4326", always_xy=True)
+gps_longitude_degrees, gps_latitude_degrees = reverse_transformer.transform(gps_x, gps_y)
+
 # Stap 5: Plot een 3D-lijnweergave
 fig = plt.figure(figsize=(12, 8))
 ax = fig.add_subplot(111, projection='3d')
@@ -44,12 +48,12 @@ ax = fig.add_subplot(111, projection='3d')
 norm = Normalize(vmin=np.nanmin(heights), vmax=np.nanmax(heights))
 colors = plt.cm.viridis(norm(heights))
 
-# Plot de lijn in 3D
-for i in range(len(gps_x) - 1):
+# Plot de lijn in 3D met coördinaten in graden
+for i in range(len(gps_longitude_degrees) - 1):
     ax.plot(
-        gps_x[i:i + 2], gps_y[i:i + 2], heights[i:i + 2],
+        gps_longitude_degrees[i:i + 2], gps_latitude_degrees[i:i + 2], heights[i:i + 2],
         color=colors[i],
-        linewidth=2
+        linewidth=1
     )
 
 # Kleurenbalk toevoegen
@@ -60,12 +64,11 @@ cbar.set_label('Hoogte boven NAP (m)', fontsize=12)
 
 # Labels en titel
 ax.set_title('Hoogte boven NAP langs de route', fontsize=16)
-ax.set_xlabel('Longitude (m)', fontsize=12)
-ax.set_ylabel('Latitude (m)', fontsize=12)
+ax.set_xlabel('Longitude (graden)', fontsize=12)
+ax.set_ylabel('Latitude (graden)', fontsize=12)
 ax.set_zlabel('Hoogte (m)', fontsize=12)
 ax.tick_params(axis='both', which='major', labelsize=10)
 
 # Weergave optimaliseren
 plt.tight_layout()
 plt.show()
-
