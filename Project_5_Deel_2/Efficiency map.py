@@ -16,11 +16,7 @@ def filter_efficiency(data):
 
     """
 
-    # Remove rows with invalid input/output power
-
     data = data[(data['P_in'] > 0) & (data['P_out'] >= 0)]
-
-    # Clamp efficiency to a valid range [0, 1] using .loc to avoid SettingWithCopyWarning
 
     data.loc[:, 'Efficiency'] = np.clip(data['Efficiency'], 0, 1)
 
@@ -48,11 +44,15 @@ def main():
 
     df = filter_efficiency(df)
  
+    # **Filter out negative Torque values**
+
+    df = df[df['Torque'] >= 0]
+ 
     # Define bin sizes for Torque and RPM
 
-    torque_bins = np.linspace(df['Torque'].min(), df['Torque'].max(), 50)  # 50 bins for torque
+    torque_bins = np.linspace(df['Torque'].min(), df['Torque'].max(), 50)
 
-    rpm_bins = np.linspace(df['n'].min(), df['n'].max(), 50)  # 50 bins for RPM
+    rpm_bins = np.linspace(df['n'].min(), df['n'].max(), 50)
  
     # Add binned columns to the DataFrame
 
@@ -76,7 +76,7 @@ def main():
 
         aggfunc='mean',
 
-        observed=False  # Explicitly set to prevent FutureWarning
+        observed=False
 
     )
  
@@ -86,18 +86,18 @@ def main():
 
     contour = plt.contourf(
 
-        pivot_table.columns.astype(float),  # Convert labels back to float for plotting
+        pivot_table.columns.astype(float),
 
-        pivot_table.index.astype(float),   # Convert labels back to float for plotting
+        pivot_table.index.astype(float),
 
         pivot_table.values,
 
-        cmap='rainbow',  # Rainbow colormap for vibrant colors
+        cmap='rainbow',
 
         levels=20
 
     )
-
+ 
     plt.colorbar(contour, label='Efficiency (%)')
 
     plt.title('Efficiency Map (n, Torque, η)')
