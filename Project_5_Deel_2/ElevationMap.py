@@ -6,49 +6,49 @@ from pyproj import Transformer
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 
-# Stap 1: Laad de rasterdata
-with rasterio.open('QgisMerge.tif') as src:  # Opent het tiff bestand
-    raster_data = src.read(1)  # Lees de eerste band, deze bevat de hoogte data
-    bounds = src.bounds  # Krijg de grenzen van het cooordinatensysteem
-    resolution = src.res  # Afmetingen van de pixels in meter 
-    width, height = src.width, src.height  # breette en hoogte van het aantal rasters
-    # Dit doe je om te bepalen welke GPS-coördinaten overeenkomen met specifieke pixels in het raster.
+# Step 1: Load the raster data
+with rasterio.open('QgisMerge.tif') as src:  # Opens the TIFF file
+    raster_data = src.read(1)  # Reads the first band, which contains the elevation data
+    bounds = src.bounds  # Get the boundaries of the coordinate system
+    resolution = src.res  # Dimensions of the pixels in meters
+    width, height = src.width, src.height  # Width and height of the number of raster cells
+    # This is done to determine which GPS coordinates correspond to specific pixels in the raster.
 
-# Forceer raster CRS naar RD New (EPSG:28992)
-raster_crs = "EPSG:28992"  # Zodat de coordinaten van de busdata overeenkomen met de coordinaten van de rasterdata
+# Force raster CRS to RD New (EPSG:28992)
+raster_crs = "EPSG:28992"  # Ensures that the coordinates of the bus data match the coordinates of the raster data
 
-# Maak X- en Y-coördinaten voor het raster
+# Create X and Y coordinates for the raster
 x = np.linspace(bounds.left, bounds.right, width)  # Longitude (X)
 y = np.linspace(bounds.top, bounds.bottom, height)  # Latitude (Y)
 raster_data = raster_data.astype(float)
 
-# Stap 2: Laad de GPS-data
+# Step 2: Load the GPS data
 gps_data = pd.read_excel('data_project_05.xlsx', sheet_name='sheet_01')
 gps_longitude = gps_data['gps_1'].values  # Longitude
 gps_latitude = gps_data['gps_0'].values  # Latitude
 
-# Stap 3: Converteer GPS-coördinaten naar RD New
+# Step 3: Convert GPS coordinates to RD New
 transformer = Transformer.from_crs("EPSG:4326", raster_crs, always_xy=True)
 gps_x, gps_y = transformer.transform(gps_longitude, gps_latitude)
 
-# Stap 4: Interpolatie - Koppel GPS-punten aan hoogtewaarden
+# Step 4: Interpolation - Link GPS points to elevation values
 interpolator = RegularGridInterpolator((y[::-1], x), raster_data, bounds_error=False, fill_value=np.nan)
 gps_points = np.array([gps_y, gps_x]).T
 heights = interpolator(gps_points)
 
-# Toevoeging: Transformeer RD New-coördinaten (meters) terug naar EPSG:4326 (graden)
+# Addition: Transform RD New coordinates (meters) back to EPSG:4326 (degrees)
 reverse_transformer = Transformer.from_crs(raster_crs, "EPSG:4326", always_xy=True)
 gps_longitude_degrees, gps_latitude_degrees = reverse_transformer.transform(gps_x, gps_y)
 
-# Stap 5: Plot een 3D-lijnweergave
+# Step 5: Plot a 3D line representation
 fig = plt.figure(figsize=(12, 8))
 ax = fig.add_subplot(111, projection='3d')
 
-# Kleuren instellen op basis van hoogte
+# Set colors based on elevation
 norm = Normalize(vmin=np.nanmin(heights), vmax=np.nanmax(heights))
 colors = plt.cm.viridis(norm(heights))
 
-# Plot de lijn in 3D met coördinaten in graden
+# Plot the line in 3D with coordinates in degrees
 for i in range(len(gps_longitude_degrees) - 1):
     ax.plot(
         gps_longitude_degrees[i:i + 2], gps_latitude_degrees[i:i + 2], heights[i:i + 2],
@@ -56,19 +56,20 @@ for i in range(len(gps_longitude_degrees) - 1):
         linewidth=1
     )
 
-# Kleurenbalk toevoegen
+# Add a color bar
 sm = plt.cm.ScalarMappable(cmap='viridis', norm=norm)
 sm.set_array([])
 cbar = fig.colorbar(sm, ax=ax, pad=0.1)
-cbar.set_label('Hoogte boven NAP (m)', fontsize=12)
+cbar.set_label('Elevation above NAP (m)', fontsize=12)
 
-# Labels en titel
-ax.set_title('Hoogte boven NAP langs de route', fontsize=16)
-ax.set_xlabel('Longitude (graden)', fontsize=12)
-ax.set_ylabel('Latitude (graden)', fontsize=12)
-ax.set_zlabel('Hoogte (m)', fontsize=12)
+# Labels and title
+ax.set_title('Elevation above NAP along the route', fontsize=16)
+ax.set_xlabel('Longitude (degrees)', fontsize=12)
+ax.set_ylabel('Latitude (degrees)', fontsize=12)
+ax.set_zlabel('Elevation (m)', fontsize=12)
 ax.tick_params(axis='both', which='major', labelsize=10)
 
-# Weergave optimaliseren
+# Optimize display
 plt.tight_layout()
 plt.show()
+
